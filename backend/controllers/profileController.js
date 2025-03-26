@@ -77,7 +77,11 @@ exports.updateProfile = async (req, res) => {
 exports.uploadProfilePhoto = async (req, res) => {
     try {
         console.log('Upload request received:', {
-            file: req.file ? 'File received' : 'No file received',
+            file: req.file ? {
+                filename: req.file.filename,
+                path: req.file.path,
+                size: req.file.size
+            } : 'No file received',
             body: req.body,
             user: req.user ? req.user._id : 'No user'
         });
@@ -87,6 +91,19 @@ exports.uploadProfilePhoto = async (req, res) => {
                 success: false,
                 message: 'No file uploaded' 
             });
+        }
+
+        // Log file existence check
+        try {
+            const fileExists = fs.existsSync(req.file.path);
+            console.log(`File exists check: ${fileExists ? 'File exists' : 'File missing'} at ${req.file.path}`);
+            
+            if (fileExists) {
+                const fileStats = fs.statSync(req.file.path);
+                console.log('File stats:', fileStats);
+            }
+        } catch (err) {
+            console.error('Error checking file:', err);
         }
 
         // Find user profile
@@ -101,7 +118,15 @@ exports.uploadProfilePhoto = async (req, res) => {
 
         // Create a public URL for the uploaded file
         const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const fileUrl = `${baseUrl}/uploads/profiles/${req.file.filename}`;
+        
+        // Ensure path separators are correct for URLs (forward slashes)
+        const normalizedFilename = req.file.filename.replace(/\\/g, '/');
+        
+        // Create the file URL with the correct path
+        // Using just the filename as the 'uploads' directory is already in the static path
+        const fileUrl = `${baseUrl}/uploads/profiles/${normalizedFilename}`;
+        
+        console.log('Generated file URL:', fileUrl);
 
         // Update the profile with the image URL
         profile.avatar = fileUrl;
@@ -110,7 +135,13 @@ exports.uploadProfilePhoto = async (req, res) => {
         res.json({
             success: true,
             message: 'Profile photo uploaded successfully',
-            photoUrl: fileUrl
+            photoUrl: fileUrl,
+            // Include debug info to help identify issues
+            debug: {
+                originalFilePath: req.file.path,
+                filename: req.file.filename,
+                baseUrl: baseUrl
+            }
         });
     } catch (error) {
         console.error('Error uploading profile photo:', error);

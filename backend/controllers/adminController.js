@@ -7,6 +7,7 @@ const Booking = require('../models/Booking');
 const mongoose = require('mongoose');
 const { exportToExcel, exportToPDF } = require('../utils/exportUtils');
 const AuditLog = require('../models/AuditLog');
+const fs = require('fs');
 
 // Admin Authentication
 exports.login = async (req, res) => {
@@ -453,14 +454,37 @@ exports.uploadEventImage = async (req, res) => {
             size: req.file.size
         });
 
+        // Log file existence check
+        try {
+            const fileExists = fs.existsSync(req.file.path);
+            console.log(`File exists check: ${fileExists ? 'File exists' : 'File missing'} at ${req.file.path}`);
+            
+            if (fileExists) {
+                const fileStats = fs.statSync(req.file.path);
+                console.log('File stats:', fileStats);
+            }
+        } catch (err) {
+            console.error('Error checking file:', err);
+        }
+
         // Create URL for the uploaded file
         const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
+        
+        // Normalize path separators for URLs
+        const normalizedFilename = req.file.filename.replace(/\\/g, '/');
+        const fileUrl = `${baseUrl}/uploads/events/${normalizedFilename}`;
+        
+        console.log('Generated file URL:', fileUrl);
 
         res.json({
             success: true,
             imageUrl: fileUrl,
-            message: 'Image uploaded successfully'
+            message: 'Image uploaded successfully',
+            debug: {
+                originalFilePath: req.file.path,
+                filename: req.file.filename,
+                baseUrl: baseUrl
+            }
         });
     } catch (error) {
         console.error('Image upload error:', error);

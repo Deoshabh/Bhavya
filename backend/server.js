@@ -174,6 +174,70 @@ app.get('/', (req, res) => {
     });
 });
 
+// Fix for static files - ensure these lines are BEFORE the API routes
+// Create absolute path to uploads directory
+const uploadsPath = path.join(__dirname, 'uploads');
+console.log('Uploads directory path:', uploadsPath);
+
+// Ensure uploads directory exists
+if (!fs.existsSync(uploadsPath)) {
+    console.log('Creating uploads directory');
+    fs.mkdirSync(uploadsPath, { recursive: true });
+}
+
+// Set proper permissions on uploads directory (Unix systems only)
+if (process.platform !== 'win32') {
+    try {
+        fs.chmodSync(uploadsPath, 0o755);
+        console.log('Set permissions on uploads directory');
+    } catch (err) {
+        console.error('Error setting uploads directory permissions:', err);
+    }
+}
+
+// Serve static files explicitly with options
+app.use('/uploads', express.static(uploadsPath, {
+    dotfiles: 'ignore',
+    etag: true,
+    index: false,
+    maxAge: '1d',
+    redirect: false,
+    setHeaders: function (res, path, stat) {
+        res.set('x-timestamp', Date.now());
+        // Ensure CORS headers if needed
+        res.set('Access-Control-Allow-Origin', '*');
+        // Set content type correctly for images
+        if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+            res.set('Content-Type', 'image/jpeg');
+        } else if (path.endsWith('.png')) {
+            res.set('Content-Type', 'image/png');
+        } else if (path.endsWith('.gif')) {
+            res.set('Content-Type', 'image/gif');
+        }
+    }
+}));
+
+// Temporary debugging endpoint to check if files exist
+app.get('/check-image/:filename', (req, res) => {
+    const filePath = path.join(uploadsPath, req.params.filename);
+    const fileExists = fs.existsSync(filePath);
+    
+    if (fileExists) {
+        const stats = fs.statSync(filePath);
+        res.json({
+            exists: true,
+            size: stats.size,
+            path: filePath,
+            publicUrl: `${req.protocol}://${req.get('host')}/uploads/${req.params.filename}`
+        });
+    } else {
+        res.json({
+            exists: false,
+            checkedPath: filePath
+        });
+    }
+});
+
 // Ensure serving static files for uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

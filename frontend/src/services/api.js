@@ -189,6 +189,73 @@ api.interceptors.response.use(
     }
 );
 
+// Add a function to check if an image exists at the given URL
+api.checkImageUrl = async (url) => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = url;
+    });
+};
+
+// Add a helper function to fix image URLs if they're relative
+api.getFullImageUrl = (url) => {
+    if (!url) return '';
+    
+    // If it's already an absolute URL, return it
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+    }
+    
+    // If it's a relative URL but doesn't start with /, add /
+    if (!url.startsWith('/')) {
+        url = '/' + url;
+    }
+    
+    // Get the base URL from the API config or from window.location
+    const baseUrl = api.defaults.baseURL 
+        ? api.defaults.baseURL.split('/api')[0] 
+        : window.location.origin;
+        
+    return `${baseUrl}${url}`;
+};
+
+// Add special handling for file upload requests
+api.uploadFile = async (endpoint, file, fieldName = 'image', additionalData = {}) => {
+    const formData = new FormData();
+    formData.append(fieldName, file);
+    
+    // Add any additional data to the form
+    Object.entries(additionalData).forEach(([key, value]) => {
+        formData.append(key, value);
+    });
+    
+    try {
+        const token = localStorage.getItem('token');
+        const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        console.log(`Uploading file to ${endpoint} with field name ${fieldName}`);
+        
+        const response = await axios.post(
+            getBaseUrl() + endpoint, 
+            formData, 
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    ...authHeader
+                }
+            }
+        );
+        
+        console.log('Upload response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('File upload error:', error);
+        throw error;
+    }
+};
+
 // Update authAPI to use the correct endpoints and methods
 export const authAPI = {
     register: (userData) => api.post('/auth/register', userData),
