@@ -38,8 +38,12 @@ const VisitorProfile = () => {
                 country: formData.get('country')
             },
             visitorProfile: {
-                interests: interests.split(',').map(i => i.trim()),
-                preferredCategories: formData.get('preferredCategories').split(',').map(c => c.trim())
+                interests: interests && interests.trim() 
+                    ? interests.split(',').map(i => i.trim()) 
+                    : [],
+                preferredCategories: formData.get('preferredCategories') 
+                    ? formData.get('preferredCategories').split(',').map(c => c.trim()) 
+                    : []
             }
         };
 
@@ -145,4 +149,4 @@ const VisitorProfile = () => {
     );
 };
 
-export default VisitorProfile; 
+export default VisitorProfile;

@@ -4,24 +4,24 @@ import axios from 'axios';
 const getBaseUrl = () => {
     // Use environment variable if available
     if (process.env.REACT_APP_API_URL) {
+        console.log('Using API URL from environment:', process.env.REACT_APP_API_URL);
         return process.env.REACT_APP_API_URL;
     }
     
     // In production, use origin-based API URLs
     const hostname = window.location.hostname;
+    let baseUrl;
     
     if (hostname.includes('bhavya.org.in')) {
         // When on bhavya.org.in domain, use its API
-        return 'https://api.bhavya.org.in';
+        baseUrl = 'https://api.bhavya.org.in/api';
+    } else {
+        // Default fallback for local development
+        baseUrl = 'http://localhost:5001/api';
     }
     
-    if (hostname.includes('bhavya.org.in')) {
-        // When on bhavya.org.in domain, use its API
-        return 'https://bhavya.org.in/api';
-    }
-    
-    // Default fallback for local development
-    return 'http://localhost:5001/api';
+    console.log('Determined API base URL:', baseUrl);
+    return baseUrl;
 };
 
 // Create the axios instance with the correct baseURL
@@ -33,49 +33,35 @@ const api = axios.create({
     withCredentials: true // Important for CORS with credentials
 });
 
-// Request interceptor
+// Add request interceptor to log API requests
 api.interceptors.request.use(
     (config) => {
-        // Check if it's an admin route
-        if (config.url.startsWith('/admin')) {
-            const adminToken = localStorage.getItem('adminToken');
-            if (adminToken) {
-                config.headers.Authorization = `Bearer ${adminToken}`;
-            }
-        } else {
-            const userToken = localStorage.getItem('token');
-            if (userToken) {
-                config.headers.Authorization = `Bearer ${userToken}`;
-            }
-        }
-        return config;
-    },
-    (error) => {
-        console.error('Request error:', error);
-        return Promise.reject(error);
-    }
-);
-
-// Add request interceptor for debugging
-api.interceptors.request.use(
-    config => {
+        // Log the full URL being requested
         console.log('API Request:', {
             method: config.method,
             url: config.url,
             data: config.data,
             params: config.params
         });
+        
+        // Add auth token to requests if available
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        
         return config;
     },
-    error => {
+    (error) => {
+        console.error('API Request Error:', error);
         return Promise.reject(error);
     }
 );
 
-// Response interceptor
+// Enhance response interceptor with more detailed error logging
 api.interceptors.response.use(
     (response) => {
-        // Ensure response has a success flag
+        // Add success property to response data
         if (typeof response.data === 'object' && !response.data.hasOwnProperty('success')) {
             response.data = {
                 success: true,
@@ -94,6 +80,17 @@ api.interceptors.response.use(
                 localStorage.removeItem('token');
                 window.location.href = '/login';
             }
+        }
+
+        // Enhanced error logging for 404 responses
+        if (error.response?.status === 404) {
+            console.error('API 404 Error:', {
+                url: error.config?.url,
+                method: error.config?.method,
+                fullUrl: `${error.config?.baseURL}${error.config?.url}`,
+                headers: error.config?.headers,
+                data: error.config?.data
+            });
         }
 
         // Format error response
@@ -131,10 +128,11 @@ api.interceptors.response.use(
     }
 );
 
+// Update authAPI to use the correct endpoints that match the backend routes
 export const authAPI = {
     register: (userData) => api.post('/auth/register', userData),
     login: (credentials) => api.post('/auth/login', credentials),
-    verifyToken: () => api.get('/auth/verify'),
+    verifyToken: () => api.get('/auth/verify-token'),
     adminVerify: () => api.get('/admin/verify')
 };
 
