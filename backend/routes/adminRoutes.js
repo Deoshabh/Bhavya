@@ -100,4 +100,10 @@ router.get('/export/users', adminController.exportUsers);
 // Audit logs
 router.get('/audit-logs', adminController.getAuditLogs);
 
-module.exports = router; 
+// Replace Cloudinary upload with local upload
+const upload = require('../utils/localFileUpload');
+
+// Update the route to use the new upload middleware
+router.post('/upload/image', upload.single('image'), adminController.uploadEventImage);
+
+module.exports = router;

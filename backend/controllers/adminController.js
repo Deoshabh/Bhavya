@@ -448,29 +448,19 @@ exports.uploadEventImage = async (req, res) => {
 
         // Debug logs
         console.log('File received:', {
+            filename: req.file.filename,
+            path: req.file.path,
             mimetype: req.file.mimetype,
             size: req.file.size
         });
 
-        // Convert buffer to base64
-        const fileStr = req.file.buffer.toString('base64');
-        const fileType = req.file.mimetype;
-
-        // Upload to Cloudinary
-        const uploadResponse = await cloudinary.uploader.upload(
-            `data:${fileType};base64,${fileStr}`,
-            {
-                folder: 'events',
-                resource_type: 'auto',
-                transformation: [
-                    { width: 1000, height: 600, crop: 'limit' }
-                ]
-            }
-        );
+        // Create URL for the uploaded file
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
 
         res.json({
             success: true,
-            imageUrl: uploadResponse.secure_url,
+            imageUrl: fileUrl,
             message: 'Image uploaded successfully'
         });
     } catch (error) {
@@ -756,4 +746,4 @@ exports.exportTickets = async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
-}; 
+};

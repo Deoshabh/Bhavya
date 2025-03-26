@@ -173,6 +173,9 @@ app.get('/', (req, res) => {
     });
 });
 
+// Add static file serving for uploaded images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
