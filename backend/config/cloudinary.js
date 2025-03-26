@@ -1,15 +1,10 @@
-const cloudinary = require('cloudinary').v2;
-require('dotenv').config();
-
-console.log('Cloudinary Config:', {
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-});
-
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-module.exports = cloudinary; 
+// This file is no longer used as we've switched to local file uploads
+// Keeping as a placeholder in case there are references to it elsewhere in the code
+module.exports = {
+    uploader: {
+        upload: () => {
+            console.warn('Cloudinary upload called but application is using local file storage');
+            return Promise.reject(new Error('Cloudinary disabled'));
+        }
+    }
+};

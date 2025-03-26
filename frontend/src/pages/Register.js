@@ -180,6 +180,7 @@ const Register = () => {
                         onChange={handleChange}
                         margin="normal"
                         required
+                        autoComplete="new-password"
                     />
                     <TextField
                         fullWidth
@@ -190,6 +191,7 @@ const Register = () => {
                         onChange={handleChange}
                         margin="normal"
                         required
+                        autoComplete="new-password"
                     />
 
                     <Button
@@ -219,4 +221,4 @@ const Register = () => {
     );
 };
 
-export default Register; 
+export default Register;

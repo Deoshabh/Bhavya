@@ -7,7 +7,6 @@ const Booking = require('../models/Booking');
 const mongoose = require('mongoose');
 const { exportToExcel, exportToPDF } = require('../utils/exportUtils');
 const AuditLog = require('../models/AuditLog');
-const cloudinary = require('../config/cloudinary');
 
 // Admin Authentication
 exports.login = async (req, res) => {

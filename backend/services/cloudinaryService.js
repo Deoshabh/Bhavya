@@ -1,30 +1,50 @@
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'exhibitions',
-        allowed_formats: ['jpg', 'png', 'jpeg'],
-        transformation: [{ width: 1000, height: 600, crop: 'fill' }]
+// Configure storage
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        // Create a unique filename
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, file.fieldname + '-' + uniqueSuffix + ext);
     }
 });
 
-const uploadMiddleware = multer({ 
+// Create multer upload middleware
+const uploadMiddleware = multer({
     storage: storage,
     limits: {
         fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        // Check file type
+        if (!file.mimetype.startsWith('image/')) {
+            return cb(new Error('Only image files are allowed'));
+        }
+        cb(null, true);
     }
 }).single('image');
 
 module.exports = {
     uploadMiddleware,
-    cloudinary
-}; 
+    // Mock cloudinary object for compatibility
+    cloudinary: {
+        uploader: {
+            upload: () => {
+                console.warn('Cloudinary upload called but application is using local file storage');
+                return Promise.reject(new Error('Cloudinary disabled'));
+            }
+        }
+    }
+};

@@ -67,6 +67,7 @@ const AdminLogin = () => {
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         margin="normal"
                         required
+                        autoComplete="current-password"
                     />
                     <Button
                         type="submit"
@@ -84,4 +85,4 @@ const AdminLogin = () => {
     );
 };
 
-export default AdminLogin; 
+export default AdminLogin;

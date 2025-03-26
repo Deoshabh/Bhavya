@@ -139,6 +139,7 @@ const Login = () => {
                         onChange={handleChange}
                         margin="normal"
                         required
+                        autoComplete="current-password"
                     />
 
                     <Button
@@ -168,4 +169,4 @@ const Login = () => {
     );
 };
 
-export default Login; 
+export default Login;
