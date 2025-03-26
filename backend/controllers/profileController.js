@@ -1,5 +1,13 @@
 const Profile = require('../models/Profile');
 const User = require('../models/User');
+const path = require('path');
+const fs = require('fs');
+
+// Make sure the uploads directory exists
+const uploadDir = path.join(__dirname, '..', 'uploads', 'profiles');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 exports.getProfile = async (req, res) => {
     try {
@@ -16,7 +24,11 @@ exports.getProfile = async (req, res) => {
 
         res.json(profile);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error fetching profile:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message 
+        });
     }
 };
 
@@ -49,32 +61,63 @@ exports.updateProfile = async (req, res) => {
         }
 
         await profile.save();
-        res.json(profile);
+        res.json({
+            success: true,
+            profile
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error updating profile:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message 
+        });
     }
 };
 
 exports.uploadProfilePhoto = async (req, res) => {
     try {
+        console.log('Upload request received:', {
+            file: req.file ? 'File received' : 'No file received',
+            body: req.body,
+            user: req.user ? req.user._id : 'No user'
+        });
+
         if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
+            return res.status(400).json({ 
+                success: false,
+                message: 'No file uploaded' 
+            });
         }
 
-        const profile = await Profile.findOne({ user: req.user._id });
+        // Find user profile
+        let profile = await Profile.findOne({ user: req.user._id });
         if (!profile) {
-            return res.status(404).json({ message: 'Profile not found' });
+            // Create new profile if it doesn't exist
+            profile = new Profile({ 
+                user: req.user._id,
+                [req.user.userType === 'visitor' ? 'visitorProfile' : 'exhibitorProfile']: {}
+            });
         }
 
-        // Update profile with new photo URL
-        profile.avatar = req.file.path;
+        // Create a public URL for the uploaded file
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const fileUrl = `${baseUrl}/uploads/profiles/${req.file.filename}`;
+
+        // Update the profile with the image URL
+        profile.avatar = fileUrl;
         await profile.save();
 
-        res.json({ 
-            message: 'Profile photo updated successfully',
-            photoUrl: profile.avatar 
+        res.json({
+            success: true,
+            message: 'Profile photo uploaded successfully',
+            photoUrl: fileUrl
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error uploading profile photo:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to upload profile photo',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
     }
-}; 
+};

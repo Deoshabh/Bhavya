@@ -2,16 +2,29 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure upload directory exists
+// Ensure upload directories exist
 const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+const profilesDir = path.join(uploadDir, 'profiles');
+const eventsDir = path.join(uploadDir, 'events');
 
-// Configure storage
+// Create directories if they don't exist
+[uploadDir, profilesDir, eventsDir].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+});
+
+// Configure storage for different file types
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, uploadDir);
+        // Choose destination based on the route or field name
+        if (file.fieldname === 'photo') {
+            cb(null, profilesDir);
+        } else if (file.fieldname === 'image') {
+            cb(null, eventsDir);
+        } else {
+            cb(null, uploadDir);
+        }
     },
     filename: function (req, file, cb) {
         // Create a unique filename

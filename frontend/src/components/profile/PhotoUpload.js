@@ -36,13 +36,19 @@ const PhotoUpload = ({ currentPhoto, onPhotoUpdate }) => {
             const formData = new FormData();
             formData.append('photo', file);
 
+            console.log('Uploading photo to:', `${api.defaults.baseURL}/profile/upload-photo`);
+            
             const response = await api.post('/profile/upload-photo', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
             });
 
-            onPhotoUpdate(response.data.photoUrl);
+            if (response.data.success) {
+                onPhotoUpdate(response.data.photoUrl);
+            } else {
+                setError('Failed to upload photo. Please try again.');
+            }
         } catch (error) {
             setError('Failed to upload photo. Please try again.');
             console.error('Photo upload error:', error);
@@ -99,4 +105,4 @@ const PhotoUpload = ({ currentPhoto, onPhotoUpdate }) => {
     );
 };
 
-export default PhotoUpload; 
+export default PhotoUpload;

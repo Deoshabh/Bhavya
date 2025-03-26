@@ -1,11 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { getProfile, updateProfile, uploadProfilePhoto } = require('../controllers/profileController');
+const profileController = require('../controllers/profileController');
 const auth = require('../middleware/auth');
-const upload = require('../utils/fileUpload');
+const upload = require('../utils/localFileUpload');
 
-router.get('/', auth, getProfile);
-router.put('/', auth, updateProfile);
-router.post('/upload-photo', auth, upload.single('photo'), uploadProfilePhoto);
+// All profile routes require authentication
+router.use(auth);
 
-module.exports = router; 
+// Get user profile
+router.get('/', profileController.getProfile);
+
+// Update user profile
+router.put('/', profileController.updateProfile);
+
+// Upload profile photo - use the localFileUpload middleware
+router.post('/upload-photo', upload.single('photo'), profileController.uploadProfilePhoto);
+
+module.exports = router;
