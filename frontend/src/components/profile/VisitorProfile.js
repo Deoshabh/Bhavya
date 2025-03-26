@@ -16,10 +16,24 @@ const VisitorProfile = () => {
 
     const fetchProfile = async () => {
         try {
+            // Log the complete URL being fetched for debugging
+            console.log('Fetching profile from:', `${api.defaults.baseURL}/profile`);
+            
             const response = await api.get('/profile');
             setProfile(response.data);
+            
+            // If profile has interests, set them in the state
+            if (response.data?.visitorProfile?.interests?.length > 0) {
+                setInterests(response.data.visitorProfile.interests.join(', '));
+            }
         } catch (error) {
             console.error('Error fetching profile:', error);
+            // Create an empty profile if none exists
+            setProfile({
+                bio: '',
+                address: {},
+                visitorProfile: { interests: [], preferredCategories: [] }
+            });
         } finally {
             setLoading(false);
         }

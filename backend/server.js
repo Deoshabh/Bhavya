@@ -14,6 +14,7 @@ const eventRoutes = require('./routes/eventRoutes');
 const authRoutes = require('./routes/authRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const profileRoutes = require('./routes/profileRoutes');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -182,10 +183,13 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Add additional mounting point for auth routes without the /api prefix
 // This ensures compatibility with frontend requests to /auth/register
 app.use('/auth', authRoutes);
+// Also mount profile routes without /api prefix for compatibility
+app.use('/profile', profileRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

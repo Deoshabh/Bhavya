@@ -17,13 +17,26 @@ const ExhibitorProfile = () => {
 
     const fetchProfile = async () => {
         try {
+            console.log('Fetching exhibitor profile from:', `${api.defaults.baseURL}/profile`);
+            
             const response = await api.get('/profile');
             setProfile(response.data);
-            if (response.data.exhibitorProfile?.pastEvents?.length > 0) {
+            if (response.data?.exhibitorProfile?.pastEvents?.length > 0) {
                 setPastEvents(response.data.exhibitorProfile.pastEvents);
             }
         } catch (error) {
             console.error('Error fetching profile:', error);
+            // Create an empty profile if none exists
+            setProfile({
+                bio: '',
+                address: {},
+                exhibitorProfile: { 
+                    companyDescription: '',
+                    website: '',
+                    socialMedia: {},
+                    pastEvents: []
+                }
+            });
         } finally {
             setLoading(false);
         }
@@ -196,4 +209,4 @@ const ExhibitorProfile = () => {
     );
 };
 
-export default ExhibitorProfile; 
+export default ExhibitorProfile;

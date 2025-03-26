@@ -91,6 +91,18 @@ api.interceptors.response.use(
                 headers: error.config?.headers,
                 data: error.config?.data
             });
+            
+            // Attempt to retry with a different URL format for certain endpoints
+            if (error.config?.url.startsWith('/profile')) {
+                console.log('Retrying profile request with alternate URL');
+                // Try the alternate URL without /api prefix
+                const alternateUrl = error.config.url.replace('/api/', '/');
+                return axios({
+                    ...error.config,
+                    url: alternateUrl,
+                    baseURL: error.config.baseURL.replace('/api', '')
+                });
+            }
         }
 
         // Format error response
