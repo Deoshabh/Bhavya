@@ -451,7 +451,8 @@ exports.uploadEventImage = async (req, res) => {
             filename: req.file.filename,
             path: req.file.path,
             mimetype: req.file.mimetype,
-            size: req.file.size
+            size: req.file.size,
+            originalname: req.file.originalname
         });
 
         // Log file existence check
@@ -470,20 +471,35 @@ exports.uploadEventImage = async (req, res) => {
         // Create URL for the uploaded file
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         
+        // Determine appropriate subdirectory - use 'events' as the default
+        const subdir = req.file.destination.includes('admin') ? 'admin' : 'events';
+        
         // Normalize path separators for URLs
         const normalizedFilename = req.file.filename.replace(/\\/g, '/');
-        const fileUrl = `${baseUrl}/uploads/events/${normalizedFilename}`;
+        const fileUrl = `${baseUrl}/uploads/${subdir}/${normalizedFilename}`;
         
         console.log('Generated file URL:', fileUrl);
+        
+        // Test if the file is actually reachable via this URL
+        try {
+            const testUrl = `${baseUrl}/check-image/${subdir}/${normalizedFilename}`;
+            console.log('Testing image accessibility at:', testUrl);
+        } catch (err) {
+            console.error('Error testing image URL:', err);
+        }
 
         res.json({
             success: true,
             imageUrl: fileUrl,
+            filename: req.file.filename,
+            path: req.file.path,
             message: 'Image uploaded successfully',
             debug: {
                 originalFilePath: req.file.path,
                 filename: req.file.filename,
-                baseUrl: baseUrl
+                baseUrl: baseUrl,
+                fullUrl: fileUrl,
+                mimetype: req.file.mimetype
             }
         });
     } catch (error) {

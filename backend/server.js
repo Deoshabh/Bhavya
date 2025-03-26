@@ -175,65 +175,122 @@ app.get('/', (req, res) => {
 });
 
 // Fix for static files - ensure these lines are BEFORE the API routes
-// Create absolute path to uploads directory
-const uploadsPath = path.join(__dirname, 'uploads');
-console.log('Uploads directory path:', uploadsPath);
+// Create absolute paths to uploads directories
+const uploadsPath = path.resolve(__dirname, 'uploads');
+const adminUploadsPath = path.resolve(uploadsPath, 'admin');
+const eventsUploadsPath = path.resolve(uploadsPath, 'events');
+const profilesUploadsPath = path.resolve(uploadsPath, 'profiles');
 
-// Ensure uploads directory exists
-if (!fs.existsSync(uploadsPath)) {
-    console.log('Creating uploads directory');
-    fs.mkdirSync(uploadsPath, { recursive: true });
-}
+console.log('Uploads directories:');
+console.log('- Main:', uploadsPath);
+console.log('- Admin:', adminUploadsPath);
+console.log('- Events:', eventsUploadsPath);
+console.log('- Profiles:', profilesUploadsPath);
 
-// Set proper permissions on uploads directory (Unix systems only)
-if (process.platform !== 'win32') {
-    try {
-        fs.chmodSync(uploadsPath, 0o755);
-        console.log('Set permissions on uploads directory');
-    } catch (err) {
-        console.error('Error setting uploads directory permissions:', err);
+// Ensure all upload directories exist
+[uploadsPath, adminUploadsPath, eventsUploadsPath, profilesUploadsPath].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        console.log(`Creating directory: ${dir}`);
+        fs.mkdirSync(dir, { recursive: true });
+        
+        // Set proper permissions on Unix systems
+        if (process.platform !== 'win32') {
+            try {
+                fs.chmodSync(dir, 0o755);
+                console.log(`Set permissions on: ${dir}`);
+            } catch (err) {
+                console.error(`Error setting permissions on ${dir}:`, err);
+            }
+        }
     }
-}
+});
 
-// Serve static files explicitly with options
-app.use('/uploads', express.static(uploadsPath, {
+// Improved static file serving for uploads
+app.use('/uploads', (req, res, next) => {
+    console.log('Static file request for:', req.path);
+    next();
+}, express.static(uploadsPath, {
     dotfiles: 'ignore',
     etag: true,
-    index: false,
     maxAge: '1d',
-    redirect: false,
     setHeaders: function (res, path, stat) {
-        res.set('x-timestamp', Date.now());
-        // Ensure CORS headers if needed
+        // Set proper CORS headers
         res.set('Access-Control-Allow-Origin', '*');
-        // Set content type correctly for images
+        
+        // Set cache control
+        res.set('Cache-Control', 'public, max-age=86400');
+        
+        // Set appropriate content type based on file extension
         if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
             res.set('Content-Type', 'image/jpeg');
         } else if (path.endsWith('.png')) {
             res.set('Content-Type', 'image/png');
         } else if (path.endsWith('.gif')) {
             res.set('Content-Type', 'image/gif');
+        } else if (path.endsWith('.webp')) {
+            res.set('Content-Type', 'image/webp');
         }
+        
+        console.log('Serving static file:', path, 'with Content-Type:', res.get('Content-Type'));
     }
 }));
 
-// Temporary debugging endpoint to check if files exist
-app.get('/check-image/:filename', (req, res) => {
-    const filePath = path.join(uploadsPath, req.params.filename);
-    const fileExists = fs.existsSync(filePath);
+// Enhanced file checking endpoint
+app.get('/check-image/:subdir?/:filename', (req, res) => {
+    const { subdir, filename } = req.params;
     
-    if (fileExists) {
-        const stats = fs.statSync(filePath);
-        res.json({
-            exists: true,
-            size: stats.size,
-            path: filePath,
-            publicUrl: `${req.protocol}://${req.get('host')}/uploads/${req.params.filename}`
-        });
+    // Sanitize inputs to prevent path traversal
+    const sanitizedSubdir = subdir ? subdir.replace(/[^a-z0-9]/gi, '') : '';
+    const sanitizedFilename = filename ? filename.replace(/[^a-z0-9_\-.]/gi, '') : '';
+    
+    // Determine file path based on whether subdir is provided
+    const filePath = sanitizedSubdir 
+        ? path.join(uploadsPath, sanitizedSubdir, sanitizedFilename)
+        : path.join(uploadsPath, sanitizedFilename);
+
+    console.log('Checking image at path:', filePath);
+    
+    if (fs.existsSync(filePath)) {
+        try {
+            const stats = fs.statSync(filePath);
+            const ext = path.extname(filePath).toLowerCase();
+            let contentType = 'application/octet-stream';
+            
+            // Determine content type
+            if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
+            else if (ext === '.png') contentType = 'image/png';
+            else if (ext === '.gif') contentType = 'image/gif';
+            else if (ext === '.webp') contentType = 'image/webp';
+            
+            // If the check parameter is not directly set, we'll return the actual image
+            if (req.query.check !== 'true') {
+                res.set('Content-Type', contentType);
+                return fs.createReadStream(filePath).pipe(res);
+            }
+            
+            // If check=true, return metadata about the file
+            res.json({
+                exists: true,
+                size: stats.size,
+                path: filePath,
+                contentType,
+                publicUrl: `${req.protocol}://${req.get('host')}/uploads/${
+                    sanitizedSubdir ? sanitizedSubdir + '/' : ''
+                }${sanitizedFilename}`
+            });
+        } catch (err) {
+            console.error('Error checking file:', err);
+            res.status(500).json({
+                exists: true,
+                error: 'Error reading file stats',
+                message: err.message
+            });
+        }
     } else {
-        res.json({
+        res.status(404).json({
             exists: false,
-            checkedPath: filePath
+            checkedPath: filePath,
+            message: 'File not found'
         });
     }
 });
