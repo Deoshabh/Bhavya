@@ -259,8 +259,11 @@ app.use('/profile', profileRoutes);
 if (process.env.NODE_ENV === 'production') {
     console.log('Running in production mode, attempting to serve static files');
     
-    // Use the path from environment variable
-    const frontendPath = process.env.FRONTEND_BUILD_PATH || '/frontend/build';
+    // Use absolute path resolution with proper fallbacks
+    const frontendPath = process.env.FRONTEND_BUILD_PATH 
+        ? path.resolve(process.env.FRONTEND_BUILD_PATH)
+        : path.resolve(__dirname, '..', 'frontend', 'build');
+    
     console.log(`Looking for frontend files at: ${frontendPath}`);
     
     try {
@@ -268,11 +271,28 @@ if (process.env.NODE_ENV === 'production') {
         if (fs.existsSync(frontendPath)) {
             console.log(`Frontend directory found at ${frontendPath}`);
             
-            app.use(express.static(frontendPath));
+            // Serve static files with explicit options
+            app.use(express.static(frontendPath, {
+                index: 'index.html',
+                setHeaders: (res, filePath) => {
+                    // Set proper caching headers for static assets
+                    if (filePath.endsWith('.html')) {
+                        // Don't cache HTML files
+                        res.setHeader('Cache-Control', 'no-cache');
+                    } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg)$/)) {
+                        // Cache assets for 1 day
+                        res.setHeader('Cache-Control', 'public, max-age=86400');
+                    }
+                }
+            }));
             
+            // Handle client-side routing by serving index.html for non-API routes
             app.get('*', (req, res, next) => {
-                // Skip API routes
-                if (req.path.startsWith('/api') || req.path === '/health') {
+                // Skip API routes and upload routes
+                if (req.path.startsWith('/api') || 
+                    req.path === '/health' || 
+                    req.path.startsWith('/uploads') ||
+                    req.path.startsWith('/check-image')) {
                     return next();
                 }
                 
@@ -284,18 +304,48 @@ if (process.env.NODE_ENV === 'production') {
                     res.sendFile(indexPath);
                 } else {
                     console.error(`Index file not found at ${indexPath}`);
-                    res.status(404).send(`Frontend build not found at ${indexPath}. Please check your deployment.`);
+                    res.status(404).send(`
+                        <h1>Error: Frontend Index File Not Found</h1>
+                        <p>The frontend build exists but index.html was not found.</p>
+                        <p>Expected location: ${indexPath}</p>
+                        <p>API routes are still available.</p>
+                    `);
                 }
             });
         } else {
             console.error(`Frontend directory not found at ${frontendPath}`);
             
-            // Add a fallback handler for non-API routes
+            // Create the directory structure in case it doesn't exist
+            try {
+                fs.mkdirSync(frontendPath, { recursive: true });
+                console.log(`Created frontend directory structure at ${frontendPath}`);
+                console.log('Please build and deploy your frontend to this location');
+            } catch (mkdirErr) {
+                console.error(`Failed to create frontend directory: ${mkdirErr.message}`);
+            }
+            
+            // Add a fallback handler for non-API routes to show a helpful message
             app.get('*', (req, res, next) => {
-                if (req.path.startsWith('/api') || req.path === '/health') {
+                if (req.path.startsWith('/api') || 
+                    req.path === '/health' || 
+                    req.path.startsWith('/uploads') ||
+                    req.path.startsWith('/check-image')) {
                     return next();
                 }
-                res.status(404).send(`Frontend build directory not found at ${frontendPath}. API routes are still available.`);
+                
+                res.status(404).send(`
+                    <h1>Frontend Build Not Found</h1>
+                    <p>Frontend build directory not found at: ${frontendPath}</p>
+                    <p>API routes are still available.</p>
+                    <p>To fix this:</p>
+                    <ol>
+                        <li>Make sure you've built your React frontend with 'npm run build'</li>
+                        <li>Copy the build folder to: ${frontendPath}</li>
+                        <li>Or set FRONTEND_BUILD_PATH environment variable to your build location</li>
+                        <li>Restart the server</li>
+                    </ol>
+                    <p>Server running in: ${process.env.NODE_ENV} mode</p>
+                `);
             });
         }
     } catch (err) {
