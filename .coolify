@@ -1,0 +1,25 @@
+version: '1.0'
+build:
+  frontend:
+    image: node:16
+    context: ./frontend
+    command:
+      - npm run build
+    environment:
+      - CI=false
+      - REACT_APP_API_URL=https://bhavya.org.in/api
+      - REACT_APP_ENV=production
+  
+  backend:
+    image: node:16
+    context: ./backend
+    command:
+      - node server.js
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+      - FRONTEND_BUILD_PATH=/frontend/build
+    volumes:
+      - ./frontend/build:/frontend/build

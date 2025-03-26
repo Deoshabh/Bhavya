@@ -1,0 +1,13 @@
+@echo off
+echo Killing existing Node processes...
+taskkill /F /IM node.exe 2>nul
+timeout /t 2 /nobreak
+
+echo Starting MongoDB...
+start /B mongod
+
+echo Waiting for MongoDB to start...
+timeout /t 5 /nobreak
+
+echo Starting backend server...
+npm run dev 

@@ -1,0 +1,202 @@
+/* Banner Slider Styles */
+.banner-slider {
+    position: relative;
+}
+
+/* Dots Container */
+.banner-slider .slick-dots {
+    position: absolute;
+    bottom: 20px;
+    display: flex !important;
+    justify-content: center;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    z-index: 20;
+}
+
+.banner-slider .slick-dots li {
+    margin: 0 5px;
+}
+
+.banner-slider .slick-dots li button {
+    font-size: 0;
+    line-height: 0;
+    display: block;
+    padding: 0;
+    border: none;
+    outline: none;
+}
+
+/* Arrow Buttons */
+.banner-slider .slick-prev,
+.banner-slider .slick-next {
+    font-size: 0;
+    line-height: 0;
+    position: absolute;
+    top: 50%;
+    display: block;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    transform: translate(0, -50%);
+    cursor: pointer;
+    border: none;
+    outline: none;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    border-radius: 50%;
+    z-index: 30;
+    transition: all 0.3s ease;
+}
+
+.banner-slider .slick-prev:hover,
+.banner-slider .slick-next:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.banner-slider .slick-prev {
+    left: 20px;
+}
+
+.banner-slider .slick-next {
+    right: 20px;
+}
+
+/* Hide arrows on mobile */
+@media (max-width: 768px) {
+    .banner-slider .slick-prev,
+    .banner-slider .slick-next {
+        display: none !important;
+    }
+}
+
+/* Slide Animation */
+.banner-slider .slick-slide {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.banner-slider .slick-slide.slick-active {
+    opacity: 1;
+}
+
+/* Image hover effect */
+.banner-slider .slide-image {
+    transition: transform 0.7s ease;
+}
+
+.banner-slider .slick-slide:hover .slide-image {
+    transform: scale(1.05);
+}
+
+/* Content Animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.banner-slider .slick-active .slide-content {
+    animation: fadeInUp 0.8s ease forwards;
+}
+
+/* Loading Placeholder */
+.banner-slider-placeholder {
+    height: 500px;
+    background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s linear infinite;
+}
+
+@keyframes shimmer {
+    to {
+        background-position: -200% 0;
+    }
+}
+
+/* Current Events Slider Styles */
+.current-events-slider .slick-track {
+    display: flex !important;
+    padding: 1rem 0;
+}
+
+.current-events-slider .slick-slide {
+    height: inherit !important;
+    margin: 0 8px;
+}
+
+.current-events-slider .slick-slide > div {
+    height: 100%;
+}
+
+/* Card hover effect */
+.current-events-slider .event-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.current-events-slider .event-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Custom arrow styles for current events */
+.current-events-slider .slick-prev,
+.current-events-slider .slick-next {
+    background: rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+}
+
+.current-events-slider .slick-prev:hover,
+.current-events-slider .slick-next:hover {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.current-events-slider .slick-prev {
+    left: -18px;
+}
+
+.current-events-slider .slick-next {
+    right: -18px;
+}
+
+/* Custom dots for current events */
+.current-events-slider .slick-dots {
+    bottom: -30px;
+}
+
+.current-events-slider .slick-dots li button:before {
+    color: #4B5563;
+}
+
+/* Loading animation for images */
+.current-events-slider .event-image {
+    position: relative;
+    overflow: hidden;
+}
+
+.current-events-slider .event-image::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: loading-shine 1.5s infinite;
+}
+
+@keyframes loading-shine {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+} 

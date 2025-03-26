@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .details {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .action-required {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New Exhibitor Booking Request</h1>
+            <p class="action-required">Action Required: Review Booking</p>
+        </div>
+        
+        <div class="content">
+            <p>A new exhibitor booking request has been received for <strong>{{eventName}}</strong>.</p>
+            
+            <div class="details">
+                <h3>Booking Details:</h3>
+                <p><strong>Booking ID:</strong> {{bookingId}}</p>
+                <p><strong>Company Name:</strong> {{companyName}}</p>
+                <p><strong>Space Required:</strong> {{spaceRequired}} sq. meters</p>
+                <p><strong>Space Type:</strong> {{spaceType}}</p>
+            </div>
+            
+            <p>Please review this booking request and take appropriate action:</p>
+            <ol>
+                <li>Check space availability</li>
+                <li>Verify company details</li>
+                <li>Review space requirements</li>
+                <li>Update booking status in admin panel</li>
+            </ol>
+            
+            <p>Click the button below to review the booking in the admin panel:</p>
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="{{adminUrl}}/bookings/{{bookingId}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    Review Booking
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
