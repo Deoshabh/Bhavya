@@ -24,24 +24,55 @@ export const AdminProvider = ({ children }) => {
             
             if (!token) {
                 setLoading(false);
+                console.log('No admin token found in localStorage');
                 return;
             }
             
             try {
                 console.log('Verifying admin token...');
                 
-                // Add token to axios headers
+                // Ensure token is set in default headers
                 api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                 
-                const response = await api.get('/admin/verify');
-                console.log('Admin verification response:', response.data);
-                
-                if (response.data) {
-                    setAdmin(response.data);
-                    setError(null);
+                // Try the main endpoint first
+                try {
+                    const response = await api.get('/admin/verify');
+                    console.log('Admin verification successful:', response.data);
+                    
+                    if (response.data) {
+                        setAdmin(response.data);
+                        setError(null);
+                    }
+                } catch (firstError) {
+                    console.error('Initial admin verification failed:', firstError);
+                    
+                    // Try with a direct axios call as fallback
+                    try {
+                        const baseURL = api.defaults.baseURL;
+                        const verifyURL = baseURL ? 
+                            `${baseURL.replace('/api', '')}/admin/verify` : 
+                            '/admin/verify';
+                        
+                        console.log('Trying alternative admin verification URL:', verifyURL);
+                        
+                        const backupResponse = await axios.get(verifyURL, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        
+                        if (backupResponse.data) {
+                            console.log('Alternative admin verification successful:', backupResponse.data);
+                            setAdmin(backupResponse.data);
+                            setError(null);
+                        }
+                    } catch (secondError) {
+                        console.error('All admin verification attempts failed:', secondError);
+                        setError('Your session has expired. Please log in again.');
+                        localStorage.removeItem('adminToken');
+                        delete api.defaults.headers.common['Authorization'];
+                    }
                 }
             } catch (err) {
-                console.error('Admin verification failed:', err);
+                console.error('Admin verification global error:', err);
                 setError('Session expired. Please login again.');
                 localStorage.removeItem('adminToken');
                 delete api.defaults.headers.common['Authorization'];

@@ -41,17 +41,29 @@ const Dashboard = () => {
 
     const fetchDashboardStats = async () => {
         try {
+            console.log('Fetching dashboard stats...');
             setLoading(true);
+            
             const response = await api.get('/admin/dashboard');
+            console.log('Dashboard stats response:', response.data);
+            
             if (response.data) {
                 setStats(response.data);
+                setError(null);
+            } else {
+                setError('Received empty response from server');
             }
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
-            setError('Failed to load dashboard statistics');
+            setError('Failed to load dashboard statistics. ' + 
+                     (error.response?.data?.message || error.message || ''));
         } finally {
             setLoading(false);
         }
+    };
+
+    const retryFetch = () => {
+        fetchDashboardStats();
     };
 
     if (loading) {
@@ -65,7 +77,31 @@ const Dashboard = () => {
     if (error) {
         return (
             <Container sx={{ py: 4 }}>
-                <Alert severity="error">{error}</Alert>
+                <Alert 
+                    severity="error" 
+                    action={
+                        <button onClick={retryFetch} className="MuiButtonBase-root MuiButton-root MuiButton-text">
+                            Retry
+                        </button>
+                    }
+                >
+                    {error}
+                </Alert>
+            </Container>
+        );
+    }
+
+    // Fallback for empty stats
+    if (!stats) {
+        return (
+            <Container maxWidth="lg" sx={{ py: 4 }}>
+                <Typography variant="h4" gutterBottom>
+                    Dashboard
+                </Typography>
+                <Alert severity="info">
+                    No dashboard statistics are available. This might be because you're viewing this page 
+                    for the first time or there's no data yet.
+                </Alert>
             </Container>
         );
     }
@@ -114,17 +150,23 @@ const Dashboard = () => {
                             Recent Users
                         </Typography>
                         <List>
-                            {stats?.users?.recent?.map((user, index) => (
-                                <React.Fragment key={user._id}>
-                                    <ListItem>
-                                        <ListItemText
-                                            primary={user.name}
-                                            secondary={user.email}
-                                        />
-                                    </ListItem>
-                                    {index < stats.users.recent.length - 1 && <Divider />}
-                                </React.Fragment>
-                            ))}
+                            {stats?.users?.recent && stats.users.recent.length > 0 ? (
+                                stats.users.recent.map((user, index) => (
+                                    <React.Fragment key={user._id || index}>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary={user.name || 'Unnamed User'}
+                                                secondary={user.email || 'No email provided'}
+                                            />
+                                        </ListItem>
+                                        {index < stats.users.recent.length - 1 && <Divider />}
+                                    </React.Fragment>
+                                ))
+                            ) : (
+                                <ListItem>
+                                    <ListItemText primary="No recent users" />
+                                </ListItem>
+                            )}
                         </List>
                     </Paper>
                 </Grid>
@@ -134,17 +176,25 @@ const Dashboard = () => {
                             Recent Events
                         </Typography>
                         <List>
-                            {stats?.events?.recent?.map((event, index) => (
-                                <React.Fragment key={event._id}>
-                                    <ListItem>
-                                        <ListItemText
-                                            primary={event.title}
-                                            secondary={`${event.location} - ${new Date(event.startDate).toLocaleDateString()}`}
-                                        />
-                                    </ListItem>
-                                    {index < stats.events.recent.length - 1 && <Divider />}
-                                </React.Fragment>
-                            ))}
+                            {stats?.events?.recent && stats.events.recent.length > 0 ? (
+                                stats.events.recent.map((event, index) => (
+                                    <React.Fragment key={event._id || index}>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary={event.title || 'Untitled Event'}
+                                                secondary={`${event.location || 'No location'} - ${
+                                                    event.startDate ? new Date(event.startDate).toLocaleDateString() : 'No date'
+                                                }`}
+                                            />
+                                        </ListItem>
+                                        {index < stats.events.recent.length - 1 && <Divider />}
+                                    </React.Fragment>
+                                ))
+                            ) : (
+                                <ListItem>
+                                    <ListItemText primary="No recent events" />
+                                </ListItem>
+                            )}
                         </List>
                     </Paper>
                 </Grid>
@@ -153,4 +203,4 @@ const Dashboard = () => {
     );
 };
 
-export default Dashboard; 
+export default Dashboard;

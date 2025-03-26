@@ -36,69 +36,84 @@ function App() {
           <AdminProvider>
             <CssBaseline />
             <Router>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/events" element={<Events />} />
-                  <Route path="/events/:id" element={<EventDetails />} />
-                  <Route 
-                    path="/tickets" 
-                    element={
-                      <ProtectedRoute>
-                        <Tickets />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/checkout/:ticketId" 
-                    element={
-                      <ProtectedRoute>
-                        <Checkout />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/tickets/success" 
-                    element={
-                      <ProtectedRoute>
-                        <PaymentSuccess />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/profile" 
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/admin/*" 
-                    element={
-                      <Routes>
-                        <Route path="login" element={<AdminLogin />} />
-                        <Route path="dashboard/*" element={
-                          <AdminRoute>
-                            <AdminLayout>
-                              <Routes>
-                                <Route path="dashboard" element={<Dashboard />} />
-                                <Route path="users" element={<Users />} />
-                                <Route path="events" element={<AdminEvents />} />
-                                <Route path="tickets" element={<AdminTickets />} />
-                                <Route path="settings" element={<AdminSettings />} />
-                              </Routes>
-                            </AdminLayout>
-                          </AdminRoute>
-                        } />
-                      </Routes>
-                    } 
-                  />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Layout>
+              {/* Main public/user routes */}
+              <Routes>
+                <Route path="/" element={<Layout><Home /></Layout>} />
+                <Route path="/login" element={<Layout><Login /></Layout>} />
+                <Route path="/register" element={<Layout><Register /></Layout>} />
+                <Route path="/events" element={<Layout><Events /></Layout>} />
+                <Route path="/events/:id" element={<Layout><EventDetails /></Layout>} />
+                
+                {/* Protected user routes */}
+                <Route path="/tickets" element={
+                  <ProtectedRoute>
+                    <Layout><Tickets /></Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/checkout/:ticketId" element={
+                  <ProtectedRoute>
+                    <Layout><Checkout /></Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/tickets/success" element={
+                  <ProtectedRoute>
+                    <Layout><PaymentSuccess /></Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Layout><Profile /></Layout>
+                  </ProtectedRoute>
+                } />
+                
+                {/* Admin routes */}
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={
+                  <AdminRoute>
+                    <AdminLayout>
+                      <Dashboard />
+                    </AdminLayout>
+                  </AdminRoute>
+                } />
+                <Route path="/admin/dashboard" element={
+                  <AdminRoute>
+                    <AdminLayout>
+                      <Dashboard />
+                    </AdminLayout>
+                  </AdminRoute>
+                } />
+                <Route path="/admin/users" element={
+                  <AdminRoute>
+                    <AdminLayout>
+                      <Users />
+                    </AdminLayout>
+                  </AdminRoute>
+                } />
+                <Route path="/admin/events" element={
+                  <AdminRoute>
+                    <AdminLayout>
+                      <AdminEvents />
+                    </AdminLayout>
+                  </AdminRoute>
+                } />
+                <Route path="/admin/tickets" element={
+                  <AdminRoute>
+                    <AdminLayout>
+                      <AdminTickets />
+                    </AdminLayout>
+                  </AdminRoute>
+                } />
+                <Route path="/admin/settings" element={
+                  <AdminRoute>
+                    <AdminLayout>
+                      <AdminSettings />
+                    </AdminLayout>
+                  </AdminRoute>
+                } />
+                
+                {/* 404 Route */}
+                <Route path="*" element={<Layout><NotFound /></Layout>} />
+              </Routes>
             </Router>
           </AdminProvider>
         </AuthProvider>

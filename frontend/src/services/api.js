@@ -58,6 +58,37 @@ api.interceptors.request.use(
     }
 );
 
+// Add special handling for admin routes
+api.interceptors.request.use(
+    (config) => {
+        // Log the full URL being requested
+        console.log('API Request:', {
+            method: config.method,
+            url: config.url,
+            baseURL: config.baseURL,
+            fullURL: `${config.baseURL || ''}${config.url}`,
+            headers: config.headers
+        });
+        
+        // Add appropriate token based on route
+        const isAdminRoute = config.url.startsWith('/admin');
+        const token = isAdminRoute 
+            ? localStorage.getItem('adminToken') 
+            : localStorage.getItem('token');
+            
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+            console.log(`Using ${isAdminRoute ? 'admin' : 'user'} token for request`);
+        }
+        
+        return config;
+    },
+    (error) => {
+        console.error('API Request Error:', error);
+        return Promise.reject(error);
+    }
+);
+
 // Enhance response interceptor with more detailed error logging
 api.interceptors.response.use(
     (response) => {
@@ -164,6 +195,17 @@ export const authAPI = {
     login: (credentials) => api.post('/auth/login', credentials),
     verifyToken: () => api.get('/auth/verify-token'), // Changed to GET
     adminVerify: () => api.get('/admin/verify')
+};
+
+// Create admin-specific API functions
+export const adminAPI = {
+    login: (credentials) => api.post('/admin/login', credentials),
+    verify: () => api.get('/admin/verify'),
+    getDashboard: () => api.get('/admin/dashboard'),
+    getUsers: (params) => api.get('/admin/users', { params }),
+    getEvents: (params) => api.get('/admin/events', { params }),
+    getTickets: (params) => api.get('/admin/tickets', { params }),
+    // Add more admin-specific endpoints as needed
 };
 
 export default api;
