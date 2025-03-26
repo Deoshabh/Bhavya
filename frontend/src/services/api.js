@@ -103,6 +103,24 @@ api.interceptors.response.use(
                     baseURL: error.config.baseURL.replace('/api', '')
                 });
             }
+            
+            // Handle auth verification specially
+            if (error.config?.url.includes('/auth/verify-token')) {
+                console.log('Retrying auth verification with alternate URL');
+                // Try both with and without /api prefix
+                const alternateUrl = error.config.url.includes('/api/') 
+                    ? error.config.url.replace('/api/', '/') 
+                    : '/auth/verify-token';
+                
+                return axios({
+                    ...error.config,
+                    url: alternateUrl,
+                    method: 'GET', // Make sure we're using GET
+                    baseURL: error.config.baseURL.includes('/api') 
+                        ? error.config.baseURL.replace('/api', '') 
+                        : error.config.baseURL
+                });
+            }
         }
 
         // Format error response
@@ -140,11 +158,11 @@ api.interceptors.response.use(
     }
 );
 
-// Update authAPI to use the correct endpoints that match the backend routes
+// Update authAPI to use the correct endpoints and methods
 export const authAPI = {
     register: (userData) => api.post('/auth/register', userData),
     login: (credentials) => api.post('/auth/login', credentials),
-    verifyToken: () => api.get('/auth/verify-token'),
+    verifyToken: () => api.get('/auth/verify-token'), // Changed to GET
     adminVerify: () => api.get('/admin/verify')
 };
 

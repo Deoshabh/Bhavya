@@ -102,7 +102,52 @@ exports.login = async (req, res) => {
     }
 };
 
+// Add a more detailed verification endpoint for logged-in users
 exports.verifyToken = async (req, res) => {
+    try {
+        // req.user is set by the auth middleware
+        if (!req.user) {
+            return res.status(401).json({ 
+                success: false,
+                message: 'No user found with this token' 
+            });
+        }
+
+        // Find user and exclude password
+        const user = await User.findById(req.user._id).select('-password');
+        
+        if (!user) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
+        }
+
+        // Return successful verification with user data
+        res.json({
+            success: true,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                mobile: user.mobile,
+                userType: user.userType,
+                organizationName: user.organizationName || null,
+                status: user.status
+            }
+        });
+    } catch (error) {
+        console.error('Token verification error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Token verification failed',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
+// Get current user info from token
+exports.getCurrentUser = async (req, res) => {
     try {
         const user = await User.findById(req.user._id).select('-password');
         if (!user) {
@@ -110,6 +155,6 @@ exports.verifyToken = async (req, res) => {
         }
         res.json(user);
     } catch (error) {
-        res.status(500).json({ message: 'Token verification failed' });
+        res.status(500).json({ message: 'Error retrieving user data' });
     }
-}; 
+};

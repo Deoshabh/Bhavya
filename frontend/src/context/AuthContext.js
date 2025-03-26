@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import { authAPI } from '../services/api';
 
 const AuthContext = createContext();
@@ -20,9 +21,29 @@ export const AuthProvider = ({ children }) => {
             const token = localStorage.getItem('token');
             if (token) {
                 try {
-                    const response = await authAPI.verifyToken();
-                    setUser(response.data);
+                    console.log('Verifying token...');
+                    // Add a retry mechanism
+                    try {
+                        const response = await authAPI.verifyToken();
+                        console.log('Token verification successful:', response.data);
+                        setUser(response.data.user);
+                    } catch (firstError) {
+                        console.error('First token verification attempt failed:', firstError);
+                        // Try alternative endpoint format
+                        try {
+                            // Direct axios call to bypass the interceptors temporarily
+                            const alternateResponse = await axios.get(`${authAPI.getBaseURL().replace('/api', '')}/auth/verify-token`, {
+                                headers: { Authorization: `Bearer ${token}` }
+                            });
+                            console.log('Alternative verification successful:', alternateResponse.data);
+                            setUser(alternateResponse.data.user);
+                        } catch (secondError) {
+                            console.error('All verification attempts failed:', secondError);
+                            localStorage.removeItem('token');
+                        }
+                    }
                 } catch (error) {
+                    console.error('Authentication initialization error:', error);
                     localStorage.removeItem('token');
                 }
             }
