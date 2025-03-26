@@ -183,6 +183,10 @@ app.use('/api/events', eventRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/payments', paymentRoutes);
 
+// Add additional mounting point for auth routes without the /api prefix
+// This ensures compatibility with frontend requests to /auth/register
+app.use('/auth', authRoutes);
+
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
     console.log('Running in production mode, attempting to serve static files');
