@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Container,
     Paper,
@@ -7,14 +7,16 @@ import {
     Button,
     Typography,
     Box,
-    Alert
+    Alert,
+    CircularProgress
 } from '@mui/material';
-import api from '../../services/api';
 import { useAdmin } from '../../context/AdminContext';
 
 const AdminLogin = () => {
     const navigate = useNavigate();
-    const { login } = useAdmin();
+    const location = useLocation();
+    const { login, admin, error: contextError } = useAdmin();
+    
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -22,17 +24,32 @@ const AdminLogin = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // If already logged in, redirect to dashboard
+    useEffect(() => {
+        if (admin) {
+            const from = location.state?.from?.pathname || '/admin/dashboard';
+            navigate(from, { replace: true });
+        }
+    }, [admin, navigate, location]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
+        // Basic validation
+        if (!formData.email || !formData.password) {
+            setError('Please fill in all fields');
+            setLoading(false);
+            return;
+        }
+
         try {
             await login(formData);
-            navigate('/admin/dashboard');
-        } catch (error) {
-            console.error('Login error:', error);
-            setError(error.response?.data?.message || 'Login failed');
+            // Success will be handled by the useEffect above
+        } catch (err) {
+            console.error('Login error:', err);
+            setError(err.message || contextError || 'Login failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -44,11 +61,13 @@ const AdminLogin = () => {
                 <Typography variant="h4" align="center" gutterBottom>
                     Admin Login
                 </Typography>
-                {error && (
+                
+                {(error || contextError) && (
                     <Alert severity="error" sx={{ mb: 2 }}>
-                        {error}
+                        {error || contextError}
                     </Alert>
                 )}
+                
                 <form onSubmit={handleSubmit}>
                     <TextField
                         fullWidth
@@ -58,6 +77,7 @@ const AdminLogin = () => {
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         margin="normal"
                         required
+                        disabled={loading}
                     />
                     <TextField
                         fullWidth
@@ -67,6 +87,7 @@ const AdminLogin = () => {
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         margin="normal"
                         required
+                        disabled={loading}
                         autoComplete="current-password"
                     />
                     <Button
@@ -77,7 +98,12 @@ const AdminLogin = () => {
                         sx={{ mt: 3 }}
                         disabled={loading}
                     >
-                        {loading ? 'Logging in...' : 'Login'}
+                        {loading ? (
+                            <>
+                                <CircularProgress size={24} sx={{ mr: 1 }} />
+                                Logging in...
+                            </>
+                        ) : 'Login'}
                     </Button>
                 </form>
             </Paper>
