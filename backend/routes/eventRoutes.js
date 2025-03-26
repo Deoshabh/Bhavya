@@ -7,7 +7,7 @@ const adminAuth = require('../middleware/adminAuth');
 
 // Public routes
 router.get('/', eventController.getEvents);
-router.get('/featured', eventController.getFeaturedEvents);
+router.get('/featured', eventController.getFeaturedEvents); // Add this line for featured events
 router.get('/:id', eventController.getEventById);
 
 // Protected routes
@@ -23,4 +23,4 @@ router.use(adminAuth);
 router.get('/:eventId/exhibitor-bookings', exhibitorController.getEventExhibitorBookings);
 router.put('/exhibitor-booking/:id/status', exhibitorController.updateExhibitorBookingStatus);
 
-module.exports = router; 
+module.exports = router;

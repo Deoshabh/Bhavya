@@ -148,7 +148,8 @@ exports.getFeaturedEvents = async (req, res) => {
                 startDate: { $gte: new Date() }
             })
             .sort({ featuredOrder: 1 })
-            .limit(4),
+            .limit(4)
+            .populate('organizer', 'name email'),
 
             Event.find({ 
                 featured: true, 
@@ -157,7 +158,8 @@ exports.getFeaturedEvents = async (req, res) => {
                 startDate: { $gte: new Date() }
             })
             .sort({ featuredOrder: 1 })
-            .limit(4),
+            .limit(4)
+            .populate('organizer', 'name email'),
 
             Event.find({ 
                 featured: true, 
@@ -166,7 +168,8 @@ exports.getFeaturedEvents = async (req, res) => {
                 startDate: { $gte: new Date() }
             })
             .sort({ featuredOrder: 1 })
-            .limit(6),
+            .limit(6)
+            .populate('organizer', 'name email'),
 
             Event.find({ 
                 status: 'published',
@@ -174,15 +177,17 @@ exports.getFeaturedEvents = async (req, res) => {
             })
             .sort({ startDate: 1 })
             .limit(4)
+            .populate('organizer', 'name email')
         ]);
 
+        // If there are no featured events, provide some default content
         res.json({
             success: true,
             featured: {
-                exhibitions,
-                conferences,
-                highlights,
-                upcoming
+                exhibitions: exhibitions.length > 0 ? exhibitions : [],
+                conferences: conferences.length > 0 ? conferences : [],
+                highlights: highlights.length > 0 ? highlights : [],
+                upcoming: upcoming.length > 0 ? upcoming : []
             }
         });
     } catch (error) {
@@ -242,4 +247,4 @@ exports.bookEvent = async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
-}; 
+};
