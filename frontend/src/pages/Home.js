@@ -102,131 +102,137 @@ const Home = () => {
         }
     };
 
-    const sliderSettings = {
-        dots: true,
-        infinite: true,
-        speed: 500,
-        slidesToShow: 1,
-        slidesToScroll: 1,
-        autoplay: true,
-        autoplaySpeed: 5000,
-        pauseOnHover: true,
-        arrows: true,
-        responsive: [
-            {
-                breakpoint: 1024,
-                settings: {
-                    slidesToShow: 1,
-                    slidesToScroll: 1,
-                    arrows: true
+    const getSliderSettings = (items = []) => {
+        return {
+            dots: items.length > 1,
+            infinite: items.length > 1,
+            speed: 500,
+            slidesToShow: 1,
+            slidesToScroll: 1,
+            autoplay: items.length > 1,
+            autoplaySpeed: 5000,
+            pauseOnHover: true,
+            arrows: items.length > 1,
+            responsive: [
+                {
+                    breakpoint: 1024,
+                    settings: {
+                        slidesToShow: 1,
+                        slidesToScroll: 1,
+                        arrows: items.length > 1
+                    }
+                },
+                {
+                    breakpoint: 768,
+                    settings: {
+                        slidesToShow: 1,
+                        slidesToScroll: 1,
+                        arrows: false
+                    }
                 }
-            },
-            {
-                breakpoint: 768,
-                settings: {
-                    slidesToShow: 1,
-                    slidesToScroll: 1,
-                    arrows: false
-                }
-            }
-        ],
-        customPaging: (i) => (
-            <div className="w-3 h-3 mx-1 rounded-full bg-white/50 hover:bg-white/80 transition-all duration-300" />
-        )
+            ],
+            customPaging: (i) => (
+                <div className="w-3 h-3 mx-1 rounded-full bg-white/50 hover:bg-white/80 transition-all duration-300" />
+            )
+        };
     };
 
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Banner Slider */}
-            <div className="relative">
-                <Slider {...sliderSettings} className="banner-slider">
-                    {featuredEvents.highlights.map((event) => (
-                        <div key={event._id} className="relative">
-                            <div className="relative h-[300px] md:h-[500px] lg:h-[600px] overflow-hidden">
-                                {/* Gradient Overlay */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-10" />
-                                
-                                {/* Background Image */}
-                                <img 
-                                    src={event.image || 'https://via.placeholder.com/1920x1080'} 
-                                    alt={event.title}
-                                    className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700"
-                                />
+            {!loading && !error && featuredEvents.highlights.length > 0 && (
+                <div className="relative">
+                    <Slider {...getSliderSettings(featuredEvents.highlights)} className="banner-slider">
+                        {featuredEvents.highlights.map((event) => (
+                            <div key={event._id} className="relative">
+                                <div className="relative h-[300px] md:h-[500px] lg:h-[600px] overflow-hidden">
+                                    {/* Gradient Overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-10" />
+                                    
+                                    {/* Background Image */}
+                                    <img 
+                                        src={event.image || 'https://via.placeholder.com/1920x1080'} 
+                                        alt={event.title}
+                                        className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700"
+                                    />
 
-                                {/* Content */}
-                                <div className="absolute bottom-0 left-0 right-0 z-20 p-6 md:p-10 lg:p-16">
-                                    <div className="max-w-7xl mx-auto">
-                                        {/* Event Category Badge */}
-                                        <span className="inline-block px-3 py-1 mb-4 text-sm bg-white/20 backdrop-blur-sm text-white rounded-full">
-                                            {event.category}
-                                        </span>
-
-                                        {/* Title */}
-                                        <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight">
-                                            {event.title}
-                                        </h2>
-
-                                        {/* Event Details */}
-                                        <div className="flex flex-wrap items-center gap-4 text-white/90 mb-6">
-                                            <span className="flex items-center">
-                                                <i className="fas fa-calendar-alt mr-2"></i>
-                                                {new Date(event.startDate).toLocaleDateString()}
+                                    {/* Content */}
+                                    <div className="absolute bottom-0 left-0 right-0 z-20 p-6 md:p-10 lg:p-16">
+                                        <div className="max-w-7xl mx-auto">
+                                            {/* Event Category Badge */}
+                                            <span className="inline-block px-3 py-1 mb-4 text-sm bg-white/20 backdrop-blur-sm text-white rounded-full">
+                                                {event.category}
                                             </span>
-                                            <span className="flex items-center">
-                                                <i className="fas fa-map-marker-alt mr-2"></i>
-                                                {event.location}
-                                            </span>
-                                            {event.price && (
+
+                                            {/* Title */}
+                                            <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight">
+                                                {event.title}
+                                            </h2>
+
+                                            {/* Event Details */}
+                                            <div className="flex flex-wrap items-center gap-4 text-white/90 mb-6">
                                                 <span className="flex items-center">
-                                                    <i className="fas fa-ticket-alt mr-2"></i>
-                                                    From ₹{event.price}
+                                                    <i className="fas fa-calendar-alt mr-2"></i>
+                                                    {new Date(event.startDate).toLocaleDateString()}
                                                 </span>
-                                            )}
-                                        </div>
+                                                <span className="flex items-center">
+                                                    <i className="fas fa-map-marker-alt mr-2"></i>
+                                                    {event.location}
+                                                </span>
+                                                {event.price && (
+                                                    <span className="flex items-center">
+                                                        <i className="fas fa-ticket-alt mr-2"></i>
+                                                        From ₹{event.price}
+                                                    </span>
+                                                )}
+                                            </div>
 
-                                        {/* CTA Buttons */}
-                                        <div className="flex flex-wrap gap-4">
-                                            <Link 
-                                                to={`/events/${event._id}`}
-                                                className="px-6 py-2 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition-colors"
-                                            >
-                                                Learn More
-                                            </Link>
-                                            <button 
-                                                onClick={() => handleBooking(event._id)}
-                                                className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-                                            >
-                                                Book Now
-                                            </button>
+                                            {/* CTA Buttons */}
+                                            <div className="flex flex-wrap gap-4">
+                                                <Link 
+                                                    to={`/events/${event._id}`}
+                                                    className="px-6 py-2 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition-colors"
+                                                >
+                                                    Learn More
+                                                </Link>
+                                                <button 
+                                                    onClick={() => handleBooking(event._id)}
+                                                    className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                                                >
+                                                    Book Now
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </Slider>
+                        ))}
+                    </Slider>
 
-                {/* Custom Navigation Arrows */}
-                <div className="hidden md:block">
-                    <button 
-                        className="absolute top-1/2 left-4 z-30 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all"
-                        onClick={() => sliderSettings.beforeChange && sliderSettings.beforeChange()}
-                    >
-                        <i className="fas fa-chevron-left text-white text-xl"></i>
-                    </button>
-                    <button 
-                        className="absolute top-1/2 right-4 z-30 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all"
-                        onClick={() => sliderSettings.afterChange && sliderSettings.afterChange()}
-                    >
-                        <i className="fas fa-chevron-right text-white text-xl"></i>
-                    </button>
+                    {/* Custom Navigation Arrows - only show when multiple slides */}
+                    {featuredEvents.highlights.length > 1 && (
+                        <div className="hidden md:block">
+                            <button 
+                                className="absolute top-1/2 left-4 z-30 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all"
+                                onClick={() => document.querySelector('.banner-slider .slick-prev').click()}
+                            >
+                                <i className="fas fa-chevron-left text-white text-xl"></i>
+                            </button>
+                            <button 
+                                className="absolute top-1/2 right-4 z-30 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all"
+                                onClick={() => document.querySelector('.banner-slider .slick-next').click()}
+                            >
+                                <i className="fas fa-chevron-right text-white text-xl"></i>
+                            </button>
+                        </div>
+                    )}
                 </div>
-            </div>
+            )}
 
             {/* Current Events Banner Slider */}
             {!loading && !error && featuredEvents.upcoming && featuredEvents.upcoming.length > 0 && (
                 <div className="relative">
-                    <Slider {...sliderSettings} className="banner-slider">
+                    <Slider {...getSliderSettings(featuredEvents.upcoming)} className="banner-slider upcoming-slider">
                         {featuredEvents.upcoming.map((event) => (
                             <div key={event._id} className="relative">
                                 <div className="relative h-[300px] md:h-[500px] lg:h-[600px] overflow-hidden">
@@ -293,99 +299,130 @@ const Home = () => {
                         ))}
                     </Slider>
 
-                    {/* Custom Navigation Arrows */}
-                    <div className="hidden md:block">
-                        <button 
-                            className="absolute top-1/2 left-4 z-30 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all"
-                            onClick={() => sliderSettings.beforeChange && sliderSettings.beforeChange()}
-                        >
-                            <i className="fas fa-chevron-left text-white text-xl"></i>
-                        </button>
-                        <button 
-                            className="absolute top-1/2 right-4 z-30 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all"
-                            onClick={() => sliderSettings.afterChange && sliderSettings.afterChange()}
-                        >
-                            <i className="fas fa-chevron-right text-white text-xl"></i>
-                        </button>
-                    </div>
+                    {/* Custom Navigation Arrows - only show when multiple slides */}
+                    {featuredEvents.upcoming.length > 1 && (
+                        <div className="hidden md:block">
+                            <button 
+                                className="absolute top-1/2 left-4 z-30 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all"
+                                onClick={() => document.querySelector('.upcoming-slider .slick-prev').click()}
+                            >
+                                <i className="fas fa-chevron-left text-white text-xl"></i>
+                            </button>
+                            <button 
+                                className="absolute top-1/2 right-4 z-30 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all"
+                                onClick={() => document.querySelector('.upcoming-slider .slick-next').click()}
+                            >
+                                <i className="fas fa-chevron-right text-white text-xl"></i>
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
-                {/* Featured Exhibitions */}
+            {/* Featured Exhibitions */}
             {!loading && !error && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <section className="py-8 md:py-12">
                         <h2 className="text-xl md:text-2xl font-semibold mb-6">Featured Exhibitions</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                            {featuredEvents.exhibitions.map((event) => (
-                                <div key={event._id} className="bg-white rounded-lg shadow hover:shadow-lg transition">
-                                    <img 
-                                        src={event.image || 'https://via.placeholder.com/400x300'} 
-                                        alt={event.title}
-                                        className="w-full h-[200px] object-cover object-center rounded-t-lg"
-                                    />
-                                    <div className="p-4">
-                                        <h3 className="font-medium text-lg">{event.title}</h3>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            {new Date(event.startDate).toLocaleDateString()}
-                                        </p>
-                                        <p className="text-sm text-gray-500">{event.location}</p>
-                                        <div className="mt-4 flex gap-2">
-                                            <Link 
-                                                to={`/events/${event._id}`}
-                                                className="text-sm text-blue-600 hover:text-blue-800"
-                                            >
-                                                Learn More
-                                            </Link>
-                                            <button 
-                                                onClick={() => handleBooking(event._id)}
-                                                className="text-sm bg-black text-white px-3 py-1 rounded-lg hover:bg-gray-800"
-                                            >
-                                                Book Now
-                                            </button>
+                        {featuredEvents.exhibitions.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                                {featuredEvents.exhibitions.map((event) => (
+                                    <div key={event._id} className="bg-white rounded-lg shadow hover:shadow-lg transition">
+                                        <img 
+                                            src={event.image || 'https://via.placeholder.com/400x300'} 
+                                            alt={event.title}
+                                            className="w-full h-[200px] object-cover object-center rounded-t-lg"
+                                        />
+                                        <div className="p-4">
+                                            <h3 className="font-medium text-lg">{event.title}</h3>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                {new Date(event.startDate).toLocaleDateString()}
+                                            </p>
+                                            <p className="text-sm text-gray-500">{event.location}</p>
+                                            <div className="mt-4 flex gap-2">
+                                                <Link 
+                                                    to={`/events/${event._id}`}
+                                                    className="text-sm text-blue-600 hover:text-blue-800"
+                                                >
+                                                    Learn More
+                                                </Link>
+                                                <button 
+                                                    onClick={() => handleBooking(event._id)}
+                                                    className="text-sm bg-black text-white px-3 py-1 rounded-lg hover:bg-gray-800"
+                                                >
+                                                    Book Now
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white p-8 rounded-lg shadow text-center">
+                                <p className="text-gray-500">No exhibitions currently available. Check back soon!</p>
+                            </div>
+                        )}
                     </section>
 
                     {/* Featured Conferences */}
                     <section className="py-8">
                         <h2 className="text-xl md:text-2xl font-semibold mb-6">Featured Conferences</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                            {featuredEvents.conferences.map((event) => (
-                                <div key={event._id} className="bg-white rounded-lg shadow hover:shadow-lg transition">
-                                    <img 
-                                        src={event.image || 'https://via.placeholder.com/400x300'} 
-                                        alt={event.title}
-                                        className="w-full h-[200px] object-cover object-center rounded-t-lg"
-                                    />
-                                    <div className="p-4">
-                                        <h3 className="font-medium text-lg">{event.title}</h3>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            {new Date(event.startDate).toLocaleDateString()}
-                                        </p>
-                                        <p className="text-sm text-gray-500">{event.location}</p>
-                                        <div className="mt-4 flex gap-2">
-                                            <Link 
-                                                to={`/events/${event._id}`}
-                                                className="text-sm text-blue-600 hover:text-blue-800"
-                                            >
-                                                Learn More
-                                            </Link>
-                                            <button 
-                                                onClick={() => handleBooking(event._id)}
-                                                className="text-sm bg-black text-white px-3 py-1 rounded-lg hover:bg-gray-800"
-                                            >
-                                                Book Now
-                                            </button>
+                        {featuredEvents.conferences.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                                {featuredEvents.conferences.map((event) => (
+                                    <div key={event._id} className="bg-white rounded-lg shadow hover:shadow-lg transition">
+                                        <img 
+                                            src={event.image || 'https://via.placeholder.com/400x300'} 
+                                            alt={event.title}
+                                            className="w-full h-[200px] object-cover object-center rounded-t-lg"
+                                        />
+                                        <div className="p-4">
+                                            <h3 className="font-medium text-lg">{event.title}</h3>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                {new Date(event.startDate).toLocaleDateString()}
+                                            </p>
+                                            <p className="text-sm text-gray-500">{event.location}</p>
+                                            <div className="mt-4 flex gap-2">
+                                                <Link 
+                                                    to={`/events/${event._id}`}
+                                                    className="text-sm text-blue-600 hover:text-blue-800"
+                                                >
+                                                    Learn More
+                                                </Link>
+                                                <button 
+                                                    onClick={() => handleBooking(event._id)}
+                                                    className="text-sm bg-black text-white px-3 py-1 rounded-lg hover:bg-gray-800"
+                                                >
+                                                    Book Now
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white p-8 rounded-lg shadow text-center">
+                                <p className="text-gray-500">No conferences currently available. Check back soon!</p>
+                            </div>
+                        )}
                     </section>
+                </div>
+            )}
+
+            {/* Fallback for no events at all */}
+            {!loading && !error && 
+              featuredEvents.highlights.length === 0 && 
+              featuredEvents.upcoming.length === 0 && 
+              featuredEvents.exhibitions.length === 0 && 
+              featuredEvents.conferences.length === 0 && (
+                <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+                    <h2 className="text-2xl font-semibold mb-4">No Events Available</h2>
+                    <p className="text-gray-600 mb-8">There are currently no events scheduled. Please check back later!</p>
+                    <img 
+                        src="https://via.placeholder.com/600x300?text=No+Events+Available" 
+                        alt="No events" 
+                        className="mx-auto rounded-lg shadow-md"
+                    />
                 </div>
             )}
 
@@ -420,4 +457,4 @@ const Home = () => {
     );
 };
 
-export default Home; 
+export default Home;
