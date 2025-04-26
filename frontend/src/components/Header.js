@@ -36,7 +36,7 @@ const Header = () => {
                     <div className="flex justify-between items-center mb-2">
                         <Link to="/" className="flex items-center">
                             <img
-                                src="/favicon.svg"
+                                src="/favicon.png"
                                 alt="Bhavya Association Logo"
                                 className="h-8 w-auto mr-2"
                             />
@@ -69,7 +69,7 @@ const Header = () => {
                     <div className="flex justify-between items-center h-16">
                         <Link to="/" className="flex items-center space-x-3">
                             <img
-                                src="/favicon.svg"
+                                src="/favicon.png"
                                 alt="Bhavya Association Logo"
                                 className="h-12 w-auto"
                             />

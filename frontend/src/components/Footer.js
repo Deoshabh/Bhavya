@@ -11,7 +11,7 @@ const Footer = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div>
                         <Link to="/" className="flex items-center mb-4">
-                            <img src="/favicon.svg" alt="Bhavya Association Logo" className="h-25 w-40" />
+                            <img src="/favicon.png" alt="Bhavya Association Logo" className="h-25 w-40" />
                         </Link>
                         <h3 className="font-['Pacifico'] text-2xl text-custom mb-4">
                             Bhavya Association
