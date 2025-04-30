@@ -27,10 +27,10 @@ const SearchBar = () => {
             component="form"
             onSubmit={handleSearch}
             sx={{
-                p: '2px 4px',
+                p: { xs: '2px', sm: '2px 4px' },
                 display: 'flex',
                 alignItems: 'center',
-                width: isExpanded ? 300 : 200,
+                width: { xs: '100%', sm: isExpanded ? 300 : 200 },
                 transition: 'width 0.3s',
                 borderRadius: '20px',
                 boxShadow: 'none',
@@ -40,28 +40,39 @@ const SearchBar = () => {
                 }
             }}
         >
-            <IconButton type="submit" sx={{ p: '10px' }} aria-label="search">
-                <SearchIcon />
+            <IconButton 
+                type="submit" 
+                sx={{ p: { xs: '8px', sm: '10px' } }} 
+                aria-label="search"
+                size="medium"
+            >
+                <SearchIcon fontSize="small" />
             </IconButton>
             <InputBase
-                sx={{ ml: 1, flex: 1 }}
+                sx={{ 
+                    ml: 1, 
+                    flex: 1,
+                    fontSize: { xs: '0.9rem', sm: '1rem' } 
+                }}
                 placeholder="Search events..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => setIsExpanded(true)}
                 onBlur={() => !searchTerm && setIsExpanded(false)}
+                inputProps={{ 'aria-label': 'search events' }}
             />
             {searchTerm && (
                 <IconButton 
-                    sx={{ p: '10px' }} 
-                    aria-label="clear"
+                    sx={{ p: { xs: '8px', sm: '10px' } }} 
+                    aria-label="clear search"
                     onClick={handleClear}
+                    size="medium"
                 >
-                    <ClearIcon />
+                    <ClearIcon fontSize="small" />
                 </IconButton>
             )}
         </Paper>
     );
 };
 
-export default SearchBar; 
+export default SearchBar;

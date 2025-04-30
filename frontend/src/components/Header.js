@@ -32,28 +32,33 @@ const Header = () => {
         <>
             {/* Mobile Navigation */}
             <nav className="fixed top-0 w-full bg-white shadow-sm z-50 md:hidden">
-                <div className="px-4 py-3">
+                <div className="px-3 py-2">
                     <div className="flex justify-between items-center mb-2">
                         <Link to="/" className="flex items-center">
                             <img
-                                src="/favicon.png"
+                                src="/favicon.webp"
                                 alt="Bhavya Association Logo"
-                                className="h-8 w-auto mr-2"
+                                className="h-7 w-auto mr-1.5"
                             />
-                            <span className="font-['Pacifico'] text-xl text-custom">
+                            <span className="font-['Pacifico'] text-lg text-custom">
                                 Bhavya Association
                             </span>
                         </Link>
                         {user ? (
-                            <IconButton onClick={handleMenuOpen}>
-                                <AccountCircle />
+                            <IconButton 
+                                onClick={handleMenuOpen}
+                                size="small" 
+                                className="p-1.5"
+                            >
+                                <AccountCircle fontSize="medium" />
                             </IconButton>
                         ) : (
                             <button
                                 onClick={() => navigate("/login")}
-                                className="text-gray-600 hover:text-black"
+                                className="text-gray-600 hover:text-black p-1.5"
+                                aria-label="Login"
                             >
-                                <i className="fas fa-user text-xl"></i>
+                                <i className="fas fa-user text-lg"></i>
                             </button>
                         )}
                     </div>
@@ -69,7 +74,7 @@ const Header = () => {
                     <div className="flex justify-between items-center h-16">
                         <Link to="/" className="flex items-center space-x-3">
                             <img
-                                src="/favicon.png"
+                                src="/favicon.webp"
                                 alt="Bhavya Association Logo"
                                 className="h-12 w-auto"
                             />
@@ -131,13 +136,19 @@ const Header = () => {
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
+                PaperProps={{
+                    sx: { 
+                        width: '160px',
+                        mt: 0.5
+                    }
+                }}
             >
-                <MenuItem onClick={handleProfileClick}>My Account</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                <MenuItem onClick={handleProfileClick} style={{minHeight: '42px'}}>My Account</MenuItem>
+                <MenuItem onClick={handleLogout} style={{minHeight: '42px'}}>Logout</MenuItem>
             </Menu>
 
             {/* Spacer for fixed header */}
-            <div className="h-20 md:h-16"></div>
+            <div className="h-16 md:h-16"></div>
         </>
     );
 };
