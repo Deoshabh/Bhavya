@@ -11,10 +11,10 @@ const Footer = () => {
                 <div className="grid grid-cols-2 xs:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
                     <div className="col-span-2 xs:col-span-2 md:col-span-1">
                         <Link to="/" className="flex items-center mb-3">
-                            <img src="/favicon.webp" alt="Bhavya Associates Logo" className="h-20 w-32" />
+                            <img src="/favicon.webp" alt="Bhavya Association Logo" className="h-20 w-32" />
                         </Link>
                         <h3 className="font-['Pacifico'] text-xl sm:text-2xl text-custom mb-3">
-                            Bhavya Associates
+                            Bhavya Association
                         </h3>
                         <p className="text-gray-600 text-xs sm:text-sm">
                             Your one-stop platform for discovering and booking the best exhibitions and events.
