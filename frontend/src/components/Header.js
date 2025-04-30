@@ -37,11 +37,11 @@ const Header = () => {
                         <Link to="/" className="flex items-center">
                             <img
                                 src="/favicon.webp"
-                                alt="Bhavya Association Logo"
+                                alt="Bhavya Associates Logo"
                                 className="h-7 w-auto mr-1.5"
                             />
                             <span className="font-['Pacifico'] text-lg text-custom">
-                                Bhavya Association
+                                Bhavya Associates
                             </span>
                         </Link>
                         {user ? (
@@ -75,11 +75,11 @@ const Header = () => {
                         <Link to="/" className="flex items-center space-x-3">
                             <img
                                 src="/favicon.webp"
-                                alt="Bhavya Association Logo"
+                                alt="Bhavya Associates Logo"
                                 className="h-12 w-auto"
                             />
                             <span className="font-['Pacifico'] text-2xl text-custom">
-                                Bhavya Association
+                                Bhavya Associates
                             </span>
                         </Link>
                         
