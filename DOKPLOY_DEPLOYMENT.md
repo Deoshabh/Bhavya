@@ -18,7 +18,7 @@ Configure the following environment variables in Dokploy:
 ```bash
 # Application Settings
 NODE_ENV=production
-PORT=5001
+PORT=5002
 FRONTEND_BUILD_PATH=/frontend/build
 
 # Database
@@ -79,7 +79,7 @@ Configure the following volumes in Dokploy:
 
 ### 4. Port Configuration
 
-- **Container Port**: 5001
+- **Container Port**: 5002
 - **Host Port**: Configure as needed (typically 80/443 with reverse proxy)
 
 ### 5. Health Check
@@ -107,7 +107,7 @@ server {
     ssl_certificate_key /path/to/private.key;
 
     location / {
-        proxy_pass http://localhost:5001;
+        proxy_pass http://localhost:5002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

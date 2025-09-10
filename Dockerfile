@@ -1,5 +1,10 @@
 # ===============================================
-# Multi-stage Dockerfile for Dokploy Deployment
+# Multi-stage# Expose the application port
+EXPOSE 5002
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:5002/health', (res) => { \rfile for Dokploy Deployment
 # ===============================================
 
 # Build stage for frontend
@@ -44,7 +49,7 @@ COPY --from=frontend-build /app/frontend/build /frontend/build
 
 # Set environment variables for production
 ENV NODE_ENV=production
-ENV PORT=5001
+ENV PORT=5002
 ENV FRONTEND_BUILD_PATH=/frontend/build
 
 # Default MongoDB connection (can be overridden via environment variables)

@@ -1,70 +1,81 @@
-require('dotenv').config();
-const express = require('express');
+require("dotenv").config();
+const express = require("express");
 const app = express();
 
 // Trust proxy settings - place this at the top of your file
-app.set('trust proxy', true);
-app.enable('trust proxy');
+app.set("trust proxy", true);
+app.enable("trust proxy");
 
-const mongoose = require('mongoose');
-const connectDB = require('./config/db');
-const errorHandler = require('./middleware/errorHandler');
-const adminRoutes = require('./routes/adminRoutes');
-const eventRoutes = require('./routes/eventRoutes');
-const authRoutes = require('./routes/authRoutes');
-const ticketRoutes = require('./routes/ticketRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
-const profileRoutes = require('./routes/profileRoutes');
-const path = require('path');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const morgan = require('morgan');
-const compression = require('compression');
-const cors = require('cors');
-const mongoSanitize = require('express-mongo-sanitize');
-const xss = require('xss-clean');
-const hpp = require('hpp');
-const fs = require('fs');
+const mongoose = require("mongoose");
+const connectDB = require("./config/db");
+const errorHandler = require("./middleware/errorHandler");
+const adminRoutes = require("./routes/adminRoutes");
+const eventRoutes = require("./routes/eventRoutes");
+const authRoutes = require("./routes/authRoutes");
+const ticketRoutes = require("./routes/ticketRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const profileRoutes = require("./routes/profileRoutes");
+const path = require("path");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const morgan = require("morgan");
+const compression = require("compression");
+const cors = require("cors");
+const mongoSanitize = require("express-mongo-sanitize");
+const xss = require("xss-clean");
+const hpp = require("hpp");
+const fs = require("fs");
 
 // Trust proxy - this is critical for rate limiting behind a proxy
-app.set('trust proxy', 'loopback, linklocal, uniquelocal'); // More comprehensive setting
+app.set("trust proxy", "loopback, linklocal, uniquelocal"); // More comprehensive setting
 
 // Add these lines right after the app initialization for debugging CORS issues
 app.use((req, res, next) => {
-    console.log('Request Origin:', req.headers.origin);
-    console.log('Allowed Origins:', process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : 'none');
-    next();
+  console.log("Request Origin:", req.headers.origin);
+  console.log(
+    "Allowed Origins:",
+    process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : "none"
+  );
+  next();
 });
 
 // Security middleware
-app.use(helmet({
+app.use(
+  helmet({
     contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://checkout.razorpay.com'],
-            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-            fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-            imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
-            connectSrc: ["'self'", 'https://api.razorpay.com'],
-        },
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "'unsafe-eval'",
+          "https://checkout.razorpay.com",
+        ],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:", "blob:"],
+        connectSrc: ["'self'", "https://api.razorpay.com"],
+      },
     },
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: false,
-}));
+  })
+);
 
 // Update CORS configuration
 const corsOptions = {
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     console.log(`CORS request from origin: ${origin}`);
-    
-    // Get allowed origins from env
-    const allowedOrigins = process.env.CORS_ORIGIN 
-      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) 
-      : ['https://www.bhavya.org.in', 'https://bhavya.org.in',];
-    
-    console.log('Configured allowed origins:', allowedOrigins);
-    
-    // Always allow if origin is in our list or not provided
+
+    // Get allowed origins from env, with fallback defaults
+    const allowedOrigins = process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+      : ["https://bhavya.org.in", "https://www.bhavya.org.in"];
+
+    console.log("Configured allowed origins:", allowedOrigins);
+
+    // Allow requests with no Origin (same-origin, server-to-server, mobile apps)
+    // Also allow if origin is in our allowed list
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -75,19 +86,19 @@ const corsOptions = {
       // callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  credentials: true, // Enable credentials support
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
   maxAge: 86400, // 24 hours
   preflightContinue: false,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
 };
 
 // Apply CORS before other middleware that might interfere
 app.use(cors(corsOptions));
 
-const corsFallback = require('./middleware/corsFallback');
+const corsFallback = require("./middleware/corsFallback");
 
 // Add this after your existing CORS middleware
 app.use(corsFallback);
@@ -98,299 +109,325 @@ app.use(xss()); // Against XSS attacks
 app.use(hpp()); // Against HTTP Parameter Pollution
 
 // Compression
-app.use(compression({
+app.use(
+  compression({
     filter: (req, res) => {
-        if (req.headers['x-no-compression']) return false;
-        return compression.filter(req, res);
+      if (req.headers["x-no-compression"]) return false;
+      return compression.filter(req, res);
     },
-    level: 6 // Balanced setting between speed and compression
-}));
+    level: 6, // Balanced setting between speed and compression
+  })
+);
 
 // Rate limiting - Global
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use(limiter);
 
 // API specific rate limits
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 50,
-    message: 'Too many API requests from this IP, please try again later',
-    trustProxy: true, // Explicitly trust the proxy
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  message: "Too many API requests from this IP, please try again later",
+  trustProxy: true, // Explicitly trust the proxy
 });
-app.use('/api/', apiLimiter);
+app.use("/api/", apiLimiter);
 
 // Auth route specific limiter
 const authLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour window
-    max: 5, // start blocking after 5 requests
-    message: 'Too many login attempts from this IP, please try again after an hour',
-    trustProxy: true, // Explicitly trust the proxy
+  windowMs: 60 * 60 * 1000, // 1 hour window
+  max: 5, // start blocking after 5 requests
+  message:
+    "Too many login attempts from this IP, please try again after an hour",
+  trustProxy: true, // Explicitly trust the proxy
 });
-app.use('/api/auth/login', authLimiter);
+app.use("/api/auth/login", authLimiter);
 
 // Middleware
-app.use(express.json({ limit: '10kb' })); // Body size limit
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: "10kb" })); // Body size limit
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
 // Logging
-if (process.env.NODE_ENV === 'production') {
-    app.use(morgan('combined', {
-        skip: (req, res) => res.statusCode < 400,
-        stream: require('rotating-file-stream').createStream('access.log', {
-            interval: '1d',
-            path: path.join(__dirname, 'logs')
-        })
-    }));
+if (process.env.NODE_ENV === "production") {
+  app.use(
+    morgan("combined", {
+      skip: (req, res) => res.statusCode < 400,
+      stream: require("rotating-file-stream").createStream("access.log", {
+        interval: "1d",
+        path: path.join(__dirname, "logs"),
+      }),
+    })
+  );
 } else {
-    app.use(morgan('dev'));
+  app.use(morgan("dev"));
 }
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'UP',
-        timestamp: new Date(),
-        uptime: process.uptime(),
-    });
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "UP",
+    timestamp: new Date(),
+    uptime: process.uptime(),
+  });
 });
 
 // Add this before the API routes
-app.get('/', (req, res) => {
-    res.json({
-        status: 'success',
-        message: 'Welcome to the API',
-        version: '1.0.0',
-        endpoints: {
-            health: '/health',
-            api: '/api',
-            docs: '/api-docs'
-        }
-    });
+app.get("/", (req, res) => {
+  res.json({
+    status: "success",
+    message: "Welcome to the API",
+    version: "1.0.0",
+    endpoints: {
+      health: "/health",
+      api: "/api",
+      docs: "/api-docs",
+    },
+  });
 });
 
 // Fix for static files - ensure these lines are BEFORE the API routes
 // Create absolute paths to uploads directories
-const uploadsPath = path.resolve(__dirname, 'uploads');
-const adminUploadsPath = path.resolve(uploadsPath, 'admin');
-const eventsUploadsPath = path.resolve(uploadsPath, 'events');
-const profilesUploadsPath = path.resolve(uploadsPath, 'profiles');
+const uploadsPath = path.resolve(__dirname, "uploads");
+const adminUploadsPath = path.resolve(uploadsPath, "admin");
+const eventsUploadsPath = path.resolve(uploadsPath, "events");
+const profilesUploadsPath = path.resolve(uploadsPath, "profiles");
 
-console.log('Uploads directories:');
-console.log('- Main:', uploadsPath);
-console.log('- Admin:', adminUploadsPath);
-console.log('- Events:', eventsUploadsPath);
-console.log('- Profiles:', profilesUploadsPath);
+console.log("Uploads directories:");
+console.log("- Main:", uploadsPath);
+console.log("- Admin:", adminUploadsPath);
+console.log("- Events:", eventsUploadsPath);
+console.log("- Profiles:", profilesUploadsPath);
 
 // Ensure all upload directories exist
-[uploadsPath, adminUploadsPath, eventsUploadsPath, profilesUploadsPath].forEach(dir => {
+[uploadsPath, adminUploadsPath, eventsUploadsPath, profilesUploadsPath].forEach(
+  (dir) => {
     if (!fs.existsSync(dir)) {
-        console.log(`Creating directory: ${dir}`);
-        fs.mkdirSync(dir, { recursive: true });
-        
-        // Set proper permissions on Unix systems
-        if (process.platform !== 'win32') {
-            try {
-                fs.chmodSync(dir, 0o755);
-                console.log(`Set permissions on: ${dir}`);
-            } catch (err) {
-                console.error(`Error setting permissions on ${dir}:`, err);
-            }
+      console.log(`Creating directory: ${dir}`);
+      fs.mkdirSync(dir, { recursive: true });
+
+      // Set proper permissions on Unix systems
+      if (process.platform !== "win32") {
+        try {
+          fs.chmodSync(dir, 0o755);
+          console.log(`Set permissions on: ${dir}`);
+        } catch (err) {
+          console.error(`Error setting permissions on ${dir}:`, err);
         }
+      }
     }
-});
+  }
+);
 
 // Improved static file serving for uploads
-app.use('/uploads', (req, res, next) => {
-    console.log('Static file request for:', req.path);
+app.use(
+  "/uploads",
+  (req, res, next) => {
+    console.log("Static file request for:", req.path);
     next();
-}, express.static(uploadsPath, {
-    dotfiles: 'ignore',
+  },
+  express.static(uploadsPath, {
+    dotfiles: "ignore",
     etag: true,
-    maxAge: '1d',
+    maxAge: "1d",
     setHeaders: function (res, path, stat) {
-        // Set proper CORS headers
-        res.set('Access-Control-Allow-Origin', '*');
-        
-        // Set cache control
-        res.set('Cache-Control', 'public, max-age=86400');
-        
-        // Set appropriate content type based on file extension
-        if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
-            res.set('Content-Type', 'image/jpeg');
-        } else if (path.endsWith('.png')) {
-            res.set('Content-Type', 'image/png');
-        } else if (path.endsWith('.gif')) {
-            res.set('Content-Type', 'image/gif');
-        } else if (path.endsWith('.webp')) {
-            res.set('Content-Type', 'image/webp');
-        }
-        
-        console.log('Serving static file:', path, 'with Content-Type:', res.get('Content-Type'));
-    }
-}));
+      // Set proper CORS headers
+      res.set("Access-Control-Allow-Origin", "*");
+
+      // Set cache control
+      res.set("Cache-Control", "public, max-age=86400");
+
+      // Set appropriate content type based on file extension
+      if (path.endsWith(".jpg") || path.endsWith(".jpeg")) {
+        res.set("Content-Type", "image/jpeg");
+      } else if (path.endsWith(".png")) {
+        res.set("Content-Type", "image/png");
+      } else if (path.endsWith(".gif")) {
+        res.set("Content-Type", "image/gif");
+      } else if (path.endsWith(".webp")) {
+        res.set("Content-Type", "image/webp");
+      }
+
+      console.log(
+        "Serving static file:",
+        path,
+        "with Content-Type:",
+        res.get("Content-Type")
+      );
+    },
+  })
+);
 
 // Enhanced file checking endpoint
-app.get('/check-image/:subdir?/:filename', (req, res) => {
-    const { subdir, filename } = req.params;
-    
-    // Sanitize inputs to prevent path traversal
-    const sanitizedSubdir = subdir ? subdir.replace(/[^a-z0-9]/gi, '') : '';
-    const sanitizedFilename = filename ? filename.replace(/[^a-z0-9_\-.]/gi, '') : '';
-    
-    // Determine file path based on whether subdir is provided
-    const filePath = sanitizedSubdir 
-        ? path.join(uploadsPath, sanitizedSubdir, sanitizedFilename)
-        : path.join(uploadsPath, sanitizedFilename);
+app.get("/check-image/:subdir?/:filename", (req, res) => {
+  const { subdir, filename } = req.params;
 
-    console.log('Checking image at path:', filePath);
-    
-    if (fs.existsSync(filePath)) {
-        try {
-            const stats = fs.statSync(filePath);
-            const ext = path.extname(filePath).toLowerCase();
-            let contentType = 'application/octet-stream';
-            
-            // Determine content type
-            if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
-            else if (ext === '.png') contentType = 'image/png';
-            else if (ext === '.gif') contentType = 'image/gif';
-            else if (ext === '.webp') contentType = 'image/webp';
-            
-            // If the check parameter is not directly set, we'll return the actual image
-            if (req.query.check !== 'true') {
-                res.set('Content-Type', contentType);
-                return fs.createReadStream(filePath).pipe(res);
-            }
-            
-            // If check=true, return metadata about the file
-            res.json({
-                exists: true,
-                size: stats.size,
-                path: filePath,
-                contentType,
-                publicUrl: `${req.protocol}://${req.get('host')}/uploads/${
-                    sanitizedSubdir ? sanitizedSubdir + '/' : ''
-                }${sanitizedFilename}`
-            });
-        } catch (err) {
-            console.error('Error checking file:', err);
-            res.status(500).json({
-                exists: true,
-                error: 'Error reading file stats',
-                message: err.message
-            });
-        }
-    } else {
-        res.status(404).json({
-            exists: false,
-            checkedPath: filePath,
-            message: 'File not found'
-        });
+  // Sanitize inputs to prevent path traversal
+  const sanitizedSubdir = subdir ? subdir.replace(/[^a-z0-9]/gi, "") : "";
+  const sanitizedFilename = filename
+    ? filename.replace(/[^a-z0-9_\-.]/gi, "")
+    : "";
+
+  // Determine file path based on whether subdir is provided
+  const filePath = sanitizedSubdir
+    ? path.join(uploadsPath, sanitizedSubdir, sanitizedFilename)
+    : path.join(uploadsPath, sanitizedFilename);
+
+  console.log("Checking image at path:", filePath);
+
+  if (fs.existsSync(filePath)) {
+    try {
+      const stats = fs.statSync(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      let contentType = "application/octet-stream";
+
+      // Determine content type
+      if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
+      else if (ext === ".png") contentType = "image/png";
+      else if (ext === ".gif") contentType = "image/gif";
+      else if (ext === ".webp") contentType = "image/webp";
+
+      // If the check parameter is not directly set, we'll return the actual image
+      if (req.query.check !== "true") {
+        res.set("Content-Type", contentType);
+        return fs.createReadStream(filePath).pipe(res);
+      }
+
+      // If check=true, return metadata about the file
+      res.json({
+        exists: true,
+        size: stats.size,
+        path: filePath,
+        contentType,
+        publicUrl: `${req.protocol}://${req.get("host")}/uploads/${
+          sanitizedSubdir ? sanitizedSubdir + "/" : ""
+        }${sanitizedFilename}`,
+      });
+    } catch (err) {
+      console.error("Error checking file:", err);
+      res.status(500).json({
+        exists: true,
+        error: "Error reading file stats",
+        message: err.message,
+      });
     }
+  } else {
+    res.status(404).json({
+      exists: false,
+      checkedPath: filePath,
+      message: "File not found",
+    });
+  }
 });
 
 // Ensure serving static files for uploaded images
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/events', eventRoutes);
-app.use('/api/tickets', ticketRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/profile', profileRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/events", eventRoutes);
+app.use("/api/tickets", ticketRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/profile", profileRoutes);
 
 // Add additional mounting point for auth routes without the /api prefix
 // This ensures compatibility with frontend requests to /auth/register
-app.use('/auth', authRoutes);
+app.use("/auth", authRoutes);
 // Also mount profile routes without /api prefix for compatibility
-app.use('/profile', profileRoutes);
+app.use("/profile", profileRoutes);
 
 // Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-    console.log('Running in production mode, attempting to serve static files');
-    
-    // Use absolute path resolution with proper fallbacks
-    const frontendPath = process.env.FRONTEND_BUILD_PATH 
-        ? path.resolve(process.env.FRONTEND_BUILD_PATH)
-        : path.resolve(__dirname, '..', 'frontend', 'build');
-    
-    console.log(`Looking for frontend files at: ${frontendPath}`);
-    
-    try {
-        // Check if directory exists
-        if (fs.existsSync(frontendPath)) {
-            console.log(`Frontend directory found at ${frontendPath}`);
-            
-            // Serve static files with explicit options
-            app.use(express.static(frontendPath, {
-                index: 'index.html',
-                setHeaders: (res, filePath) => {
-                    // Set proper caching headers for static assets
-                    if (filePath.endsWith('.html')) {
-                        // Don't cache HTML files
-                        res.setHeader('Cache-Control', 'no-cache');
-                    } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg)$/)) {
-                        // Cache assets for 1 day
-                        res.setHeader('Cache-Control', 'public, max-age=86400');
-                    }
-                }
-            }));
-            
-            // Handle client-side routing by serving index.html for non-API routes
-            app.get('*', (req, res, next) => {
-                // Skip API routes and upload routes
-                if (req.path.startsWith('/api') || 
-                    req.path === '/health' || 
-                    req.path.startsWith('/uploads') ||
-                    req.path.startsWith('/check-image')) {
-                    return next();
-                }
-                
-                const indexPath = path.join(frontendPath, 'index.html');
-                console.log(`Attempting to serve: ${indexPath}`);
-                
-                if (fs.existsSync(indexPath)) {
-                    console.log(`Serving index.html from ${indexPath}`);
-                    res.sendFile(indexPath);
-                } else {
-                    console.error(`Index file not found at ${indexPath}`);
-                    res.status(404).send(`
+if (process.env.NODE_ENV === "production") {
+  console.log("Running in production mode, attempting to serve static files");
+
+  // Use absolute path resolution with proper fallbacks
+  const frontendPath = process.env.FRONTEND_BUILD_PATH
+    ? path.resolve(process.env.FRONTEND_BUILD_PATH)
+    : path.resolve(__dirname, "..", "frontend", "build");
+
+  console.log(`Looking for frontend files at: ${frontendPath}`);
+
+  try {
+    // Check if directory exists
+    if (fs.existsSync(frontendPath)) {
+      console.log(`Frontend directory found at ${frontendPath}`);
+
+      // Serve static files with explicit options
+      app.use(
+        express.static(frontendPath, {
+          index: "index.html",
+          setHeaders: (res, filePath) => {
+            // Set proper caching headers for static assets
+            if (filePath.endsWith(".html")) {
+              // Don't cache HTML files
+              res.setHeader("Cache-Control", "no-cache");
+            } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg)$/)) {
+              // Cache assets for 1 day
+              res.setHeader("Cache-Control", "public, max-age=86400");
+            }
+          },
+        })
+      );
+
+      // Handle client-side routing by serving index.html for non-API routes
+      app.get("*", (req, res, next) => {
+        // Skip API routes and upload routes
+        if (
+          req.path.startsWith("/api") ||
+          req.path === "/health" ||
+          req.path.startsWith("/uploads") ||
+          req.path.startsWith("/check-image")
+        ) {
+          return next();
+        }
+
+        const indexPath = path.join(frontendPath, "index.html");
+        console.log(`Attempting to serve: ${indexPath}`);
+
+        if (fs.existsSync(indexPath)) {
+          console.log(`Serving index.html from ${indexPath}`);
+          res.sendFile(indexPath);
+        } else {
+          console.error(`Index file not found at ${indexPath}`);
+          res.status(404).send(`
                         <h1>Error: Frontend Index File Not Found</h1>
                         <p>The frontend build exists but index.html was not found.</p>
                         <p>Expected location: ${indexPath}</p>
                         <p>API routes are still available.</p>
                     `);
-                }
-            });
-        } else {
-            console.error(`Frontend directory not found at ${frontendPath}`);
-            
-            // Create the directory structure in case it doesn't exist
-            try {
-                fs.mkdirSync(frontendPath, { recursive: true });
-                console.log(`Created frontend directory structure at ${frontendPath}`);
-                console.log('Please build and deploy your frontend to this location');
-            } catch (mkdirErr) {
-                console.error(`Failed to create frontend directory: ${mkdirErr.message}`);
-            }
-            
-            // Add a fallback handler for non-API routes to show a helpful message
-            app.get('*', (req, res, next) => {
-                if (req.path.startsWith('/api') || 
-                    req.path === '/health' || 
-                    req.path.startsWith('/uploads') ||
-                    req.path.startsWith('/check-image')) {
-                    return next();
-                }
-                
-                res.status(404).send(`
+        }
+      });
+    } else {
+      console.error(`Frontend directory not found at ${frontendPath}`);
+
+      // Create the directory structure in case it doesn't exist
+      try {
+        fs.mkdirSync(frontendPath, { recursive: true });
+        console.log(`Created frontend directory structure at ${frontendPath}`);
+        console.log("Please build and deploy your frontend to this location");
+      } catch (mkdirErr) {
+        console.error(
+          `Failed to create frontend directory: ${mkdirErr.message}`
+        );
+      }
+
+      // Add a fallback handler for non-API routes to show a helpful message
+      app.get("*", (req, res, next) => {
+        if (
+          req.path.startsWith("/api") ||
+          req.path === "/health" ||
+          req.path.startsWith("/uploads") ||
+          req.path.startsWith("/check-image")
+        ) {
+          return next();
+        }
+
+        res.status(404).send(`
                     <h1>Frontend Build Not Found</h1>
                     <p>Frontend build directory not found at: ${frontendPath}</p>
                     <p>API routes are still available.</p>
@@ -403,11 +440,11 @@ if (process.env.NODE_ENV === 'production') {
                     </ol>
                     <p>Server running in: ${process.env.NODE_ENV} mode</p>
                 `);
-            });
-        }
-    } catch (err) {
-        console.error(`Error setting up static files: ${err.message}`);
+      });
     }
+  } catch (err) {
+    console.error(`Error setting up static files: ${err.message}`);
+  }
 }
 
 // Error handling middleware
@@ -415,73 +452,84 @@ app.use(errorHandler);
 
 // 404 handler
 app.use((req, res) => {
-    res.status(404).json({
-        status: 'error',
-        message: 'Route not found'
-    });
+  res.status(404).json({
+    status: "error",
+    message: "Route not found",
+  });
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
-    const status = err.status || 500;
-    const message = process.env.NODE_ENV === 'production' 
-        ? 'Internal server error' 
-        : err.message;
-    
-    // Log error
-    console.error(err);
+  const status = err.status || 500;
+  const message =
+    process.env.NODE_ENV === "production"
+      ? "Internal server error"
+      : err.message;
 
-    res.status(status).json({
-        status: 'error',
-        message,
-        ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
-    });
+  // Log error
+  console.error(err);
+
+  res.status(status).json({
+    status: "error",
+    message,
+    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
+  });
 });
 
 // Start server with graceful shutdown
 const startServer = async () => {
-    try {
-        // Connect to MongoDB
-        await connectDB();
-        console.log('MongoDB Connected Successfully');
+  try {
+    // Connect to MongoDB
+    await connectDB();
+    console.log("MongoDB Connected Successfully");
 
-        const server = app.listen(process.env.PORT || 5000, () => {
-            console.log(`Server running in ${process.env.NODE_ENV} mode on port ${process.env.PORT}`);
-        });
+    // Use APP_PORT from environment with fallback to PORT, then default to 5002
+    const port = process.env.APP_PORT || process.env.PORT || 5002;
 
-        // Graceful shutdown
-        process.on('SIGTERM', () => gracefulShutdown(server));
-        process.on('SIGINT', () => gracefulShutdown(server));
+    const server = app.listen(port, () => {
+      console.log(
+        `🚀 Server running in ${
+          process.env.NODE_ENV || "development"
+        } mode on port ${port}`
+      );
+      console.log(`📡 API available at: http://localhost:${port}/api`);
+      console.log(`❤️  Health check: http://localhost:${port}/health`);
+    });
 
-    } catch (error) {
-        console.error('Failed to connect to MongoDB:', error);
-        process.exit(1);
-    }
+    // Graceful shutdown
+    process.on("SIGTERM", () => gracefulShutdown(server));
+    process.on("SIGINT", () => gracefulShutdown(server));
+  } catch (error) {
+    console.error("Failed to connect to MongoDB:", error);
+    process.exit(1);
+  }
 };
 
 async function gracefulShutdown(server) {
-    console.log('Received kill signal, shutting down gracefully');
-    
-    try {
-        // Close MongoDB connection
-        await mongoose.connection.close();
-        console.log('MongoDB connection closed');
+  console.log("Received kill signal, shutting down gracefully");
 
-        // Close Express server
-        server.close(() => {
-            console.log('Closed out remaining connections');
-            process.exit(0);
-        });
+  try {
+    // Close MongoDB connection
+    await mongoose.connection.close();
+    console.log("MongoDB connection closed");
 
-        // Force close after 10 secs
-        setTimeout(() => {
-            console.error('Could not close connections in time, forcefully shutting down');
-            process.exit(1);
-        }, 10000);
-    } catch (error) {
-        console.error('Error during shutdown:', error);
-        process.exit(1);
-    }
+    // Close Express server
+    server.close(() => {
+      console.log("Closed out remaining connections");
+      process.exit(0);
+    });
+
+    // Force close after 10 secs
+    setTimeout(() => {
+      console.error(
+        "Could not close connections in time, forcefully shutting down"
+      );
+      process.exit(1);
+    }, 10000);
+  } catch (error) {
+    console.error("Error during shutdown:", error);
+    process.exit(1);
+  }
 }
 
 // Start the server

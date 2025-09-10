@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 IMAGE_NAME="bhavya-events"
 IMAGE_TAG="latest"
 CONTAINER_NAME="bhavya-events-test"
-PORT="5001"
+PORT="5002"
 
 echo -e "${BLUE}===============================================${NC}"
 echo -e "${BLUE}Building Bhavya Events Docker Image${NC}"

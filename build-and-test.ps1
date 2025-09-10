@@ -6,7 +6,7 @@ param(
     [string]$ImageName = "bhavya-events",
     [string]$ImageTag = "latest",
     [string]$ContainerName = "bhavya-events-test",
-    [int]$Port = 5001
+    [int]$Port = 5002
 )
 
 # Error handling
