@@ -176,6 +176,47 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Favicon handler - redirect to webp favicon
+app.get("/favicon.ico", (req, res) => {
+  res.redirect(301, "/favicon.webp");
+});
+
+// Static favicon.webp fallback
+app.get("/favicon.webp", (req, res) => {
+  const faviconPath = path.join(
+    __dirname,
+    "..",
+    "frontend",
+    "public",
+    "favicon.webp"
+  );
+  if (fs.existsSync(faviconPath)) {
+    res.setHeader("Content-Type", "image/webp");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.sendFile(faviconPath);
+  } else {
+    res.status(404).send("Favicon not found");
+  }
+});
+
+// Robots.txt handler
+app.get("/robots.txt", (req, res) => {
+  const robotsPath = path.join(
+    __dirname,
+    "..",
+    "frontend",
+    "public",
+    "robots.txt"
+  );
+  if (fs.existsSync(robotsPath)) {
+    res.setHeader("Content-Type", "text/plain");
+    res.sendFile(robotsPath);
+  } else {
+    res.type("text/plain");
+    res.send("User-agent: *\nDisallow:");
+  }
+});
+
 // Add this before the API routes
 app.get("/", (req, res) => {
   res.json({
