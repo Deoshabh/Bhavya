@@ -1,0 +1,100 @@
+# ===============================================
+# Docker ignore file for Dokploy deployment
+# ===============================================
+
+# Node.js
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Frontend build artifacts (we'll build these inside Docker)
+frontend/build
+frontend/dist
+
+# Backend logs and temporary files
+backend/logs
+*.log
+
+# Environment files (will be provided by Dokploy)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Test files
+**/*.test.js
+**/*.spec.js
+**/__tests__/
+coverage/
+.nyc_output
+
+# Memory bank (development notes)
+memory-bank/
+
+# Uploads directory (should be mounted as volume in production)
+backend/uploads
+uploads/
+
+# Temporary files
+tmp/
+temp/
+.tmp
+
+# Package manager files
+.npm
+.yarn
+
+# ESLint
+.eslintrc*
+.eslintignore
+
+# Prettier
+.prettierrc*
+.prettierignore
+
+# Build tools config
+webpack.config.js
+rollup.config.js
+vite.config.js
+
+# Scripts that shouldn't be in production
+*.bat
+*.ps1
+startup.sh
+
+# Development dependencies cache
+.cache/
