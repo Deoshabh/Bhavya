@@ -1,0 +1,109 @@
+version: "3.9"
+
+services:
+  bhavya-events:
+    build: .
+    container_name: bhavya-events
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - APP_PORT=5002
+      - PORT=5002
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_URI=${DB_URI}
+      - DATABASE_URL=${DATABASE_URL}
+      - CORS_ORIGIN=https://bhavya.org.in,https://www.bhavya.org.in
+      - JWT_SECRET=${JWT_SECRET}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+    expose:
+      - "5002" # internal only, no direct host mapping
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+    labels:
+      # ===== ENABLE TRAEFIK =====
+      - "traefik.enable=true"
+
+      # ===== SINGLE SERVICE DEFINITION =====
+      # Define one service that all routers will use
+      - "traefik.http.services.bhavya-app.loadbalancer.server.port=5002"
+      - "traefik.http.services.bhavya-app.loadbalancer.server.scheme=http"
+
+      # ===== FRONTEND ROUTERS (React App) =====
+      # Combined router for both main and www domains
+      - "traefik.http.routers.bhavya-frontend.rule=Host(`bhavya.org.in`) || Host(`www.bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-frontend.entrypoints=websecure"
+      - "traefik.http.routers.bhavya-frontend.tls=true"
+      - "traefik.http.routers.bhavya-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bhavya-frontend.service=bhavya-app"
+      - "traefik.http.routers.bhavya-frontend.priority=100"
+
+      # ===== API ROUTER (Express API) =====
+      # Dedicated router for API subdomain
+      - "traefik.http.routers.bhavya-api.rule=Host(`api.bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-api.entrypoints=websecure"
+      - "traefik.http.routers.bhavya-api.tls=true"
+      - "traefik.http.routers.bhavya-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bhavya-api.service=bhavya-app"
+      - "traefik.http.routers.bhavya-api.priority=200"
+
+      # ===== SECURITY MIDDLEWARE =====
+      # Security headers
+      - "traefik.http.middlewares.bhavya-security.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.bhavya-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.bhavya-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.bhavya-security.headers.stsPreload=true"
+      - "traefik.http.middlewares.bhavya-security.headers.customRequestHeaders.X-Forwarded-Proto=https"
+
+      # Apply security headers to all HTTPS routers
+      - "traefik.http.routers.bhavya-frontend.middlewares=bhavya-security"
+      - "traefik.http.routers.bhavya-api.middlewares=bhavya-security"
+
+      # ===== HTTP TO HTTPS REDIRECTS =====
+      # Redirect middleware
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+
+      # HTTP routers for redirects
+      - "traefik.http.routers.bhavya-frontend-http.rule=Host(`bhavya.org.in`) || Host(`www.bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-frontend-http.entrypoints=web"
+      - "traefik.http.routers.bhavya-frontend-http.middlewares=https-redirect"
+
+      - "traefik.http.routers.bhavya-api-http.rule=Host(`api.bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-api-http.entrypoints=web"
+      - "traefik.http.routers.bhavya-api-http.middlewares=https-redirect"
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:5002/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  uploads_data:
+    driver: local
+  logs_data:
+    driver: local
+
+networks:
+  default:
+    external: true
+    name: dokploy-network

@@ -1,0 +1,56 @@
+# ===============================================
+# Dokploy Traefik Labels Configuration
+# Copy these labels to your Dokploy service configuration
+# ===============================================
+
+# Enable Traefik
+traefik.enable=true
+
+# ===== SINGLE SERVICE DEFINITION =====
+# Define one service that all routers will use
+traefik.http.services.bhavya-app.loadbalancer.server.port=5002
+traefik.http.services.bhavya-app.loadbalancer.server.scheme=http
+
+# ===== FRONTEND ROUTERS (React App) =====
+# Combined router for both main and www domains
+traefik.http.routers.bhavya-frontend.rule=Host(`bhavya.org.in`) || Host(`www.bhavya.org.in`)
+traefik.http.routers.bhavya-frontend.entrypoints=websecure
+traefik.http.routers.bhavya-frontend.tls=true
+traefik.http.routers.bhavya-frontend.tls.certresolver=letsencrypt
+traefik.http.routers.bhavya-frontend.service=bhavya-app
+traefik.http.routers.bhavya-frontend.priority=100
+
+# ===== API ROUTER (Express API) =====
+# Dedicated router for API subdomain
+traefik.http.routers.bhavya-api.rule=Host(`api.bhavya.org.in`)
+traefik.http.routers.bhavya-api.entrypoints=websecure
+traefik.http.routers.bhavya-api.tls=true
+traefik.http.routers.bhavya-api.tls.certresolver=letsencrypt
+traefik.http.routers.bhavya-api.service=bhavya-app
+traefik.http.routers.bhavya-api.priority=200
+
+# ===== SECURITY MIDDLEWARE =====
+# Security headers
+traefik.http.middlewares.bhavya-security.headers.forceSTSHeader=true
+traefik.http.middlewares.bhavya-security.headers.stsSeconds=31536000
+traefik.http.middlewares.bhavya-security.headers.stsIncludeSubdomains=true
+traefik.http.middlewares.bhavya-security.headers.stsPreload=true
+traefik.http.middlewares.bhavya-security.headers.customRequestHeaders.X-Forwarded-Proto=https
+
+# Apply security headers to all HTTPS routers
+traefik.http.routers.bhavya-frontend.middlewares=bhavya-security
+traefik.http.routers.bhavya-api.middlewares=bhavya-security
+
+# ===== HTTP TO HTTPS REDIRECTS =====
+# Redirect middleware
+traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
+
+# HTTP routers for redirects
+traefik.http.routers.bhavya-frontend-http.rule=Host(`bhavya.org.in`) || Host(`www.bhavya.org.in`)
+traefik.http.routers.bhavya-frontend-http.entrypoints=web
+traefik.http.routers.bhavya-frontend-http.middlewares=https-redirect
+
+traefik.http.routers.bhavya-api-http.rule=Host(`api.bhavya.org.in`)
+traefik.http.routers.bhavya-api-http.entrypoints=web
+traefik.http.routers.bhavya-api-http.middlewares=https-redirect

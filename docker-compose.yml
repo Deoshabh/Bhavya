@@ -42,6 +42,71 @@ services:
       - uploads_data:/app/uploads
       - logs_data:/app/logs
     restart: unless-stopped
+    labels:
+      # ===== TRAEFIK LABELS FOR DOKPLOY =====
+      # Enable Traefik
+      - "traefik.enable=true"
+
+      # ===== FRONTEND ROUTING (React App) =====
+      # Main domain (bhavya.org.in)
+      - "traefik.http.routers.bhavya-frontend.rule=Host(`bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-frontend.entrypoints=websecure"
+      - "traefik.http.routers.bhavya-frontend.tls=true"
+      - "traefik.http.routers.bhavya-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bhavya-frontend.service=bhavya-app-service"
+      - "traefik.http.routers.bhavya-frontend.priority=100"
+
+      # WWW subdomain (www.bhavya.org.in)
+      - "traefik.http.routers.bhavya-frontend-www.rule=Host(`www.bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-frontend-www.entrypoints=websecure"
+      - "traefik.http.routers.bhavya-frontend-www.tls=true"
+      - "traefik.http.routers.bhavya-frontend-www.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bhavya-frontend-www.service=bhavya-app-service"
+      - "traefik.http.routers.bhavya-frontend-www.priority=100"
+
+      # ===== API ROUTING (Express API) =====
+      # API subdomain (api.bhavya.org.in)
+      - "traefik.http.routers.bhavya-api.rule=Host(`api.bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-api.entrypoints=websecure"
+      - "traefik.http.routers.bhavya-api.tls=true"
+      - "traefik.http.routers.bhavya-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bhavya-api.service=bhavya-app-service"
+      - "traefik.http.routers.bhavya-api.priority=200"
+
+      # ===== SERVICE DEFINITION =====
+      # Single service pointing to container port 5002
+      - "traefik.http.services.bhavya-app-service.loadbalancer.server.port=5002"
+      - "traefik.http.services.bhavya-app-service.loadbalancer.server.scheme=http"
+
+      # ===== SECURITY HEADERS =====
+      - "traefik.http.middlewares.bhavya-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.bhavya-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.bhavya-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.bhavya-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.bhavya-headers.headers.customRequestHeaders.X-Forwarded-Proto=https"
+
+      # Apply headers to all routers
+      - "traefik.http.routers.bhavya-frontend.middlewares=bhavya-headers"
+      - "traefik.http.routers.bhavya-frontend-www.middlewares=bhavya-headers"
+      - "traefik.http.routers.bhavya-api.middlewares=bhavya-headers"
+
+      # ===== HTTP TO HTTPS REDIRECT =====
+      # Redirect middleware
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+      # HTTP routers for redirect
+      - "traefik.http.routers.bhavya-frontend-http.rule=Host(`bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-frontend-http.entrypoints=web"
+      - "traefik.http.routers.bhavya-frontend-http.middlewares=redirect-to-https"
+
+      - "traefik.http.routers.bhavya-frontend-www-http.rule=Host(`www.bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-frontend-www-http.entrypoints=web"
+      - "traefik.http.routers.bhavya-frontend-www-http.middlewares=redirect-to-https"
+
+      - "traefik.http.routers.bhavya-api-http.rule=Host(`api.bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-api-http.entrypoints=web"
+      - "traefik.http.routers.bhavya-api-http.middlewares=redirect-to-https"
     healthcheck:
       test:
         [

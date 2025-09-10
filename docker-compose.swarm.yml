@@ -1,0 +1,142 @@
+# ===============================================
+# Docker Swarm Compose for Bhavya Events Platform
+# Traefik routing configuration for Dokploy
+# ===============================================
+
+version: "3.8"
+
+services:
+  # Main application service with Traefik routing
+  app:
+    image: bhavya-events:latest # Replace with your actual image name
+    ports:
+      - "5002:5002"
+    environment:
+      - NODE_ENV=production
+      - APP_PORT=5002
+      - PORT=5002
+      - FRONTEND_BUILD_PATH=/frontend/build
+      # MongoDB connection string for Dokploy
+      - DB_URI=mongodb://admin:StrongPassword123@mongo-db-mongodb-avaxdz:27017/bhavya_Events?authSource=admin
+      # Additional environment variables (set these in Dokploy)
+      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-here}
+      - CORS_ORIGIN=https://bhavya.org.in,https://www.bhavya.org.in
+      # Email configuration
+      - EMAIL_FROM=${EMAIL_FROM:-noreply@bhavya.org.in}
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT:-587}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+      # Cloudinary configuration (if used)
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      # Payment gateway configuration
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+    volumes:
+      # Mount uploads directory for persistent file storage
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      labels:
+        # ===== FRONTEND ROUTING (React App) =====
+        # Router for main domain (bhavya.org.in)
+        - "traefik.enable=true"
+        - "traefik.http.routers.bhavya-frontend.rule=Host(`bhavya.org.in`)"
+        - "traefik.http.routers.bhavya-frontend.entrypoints=websecure"
+        - "traefik.http.routers.bhavya-frontend.tls=true"
+        - "traefik.http.routers.bhavya-frontend.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.bhavya-frontend.service=bhavya-app-service"
+        - "traefik.http.routers.bhavya-frontend.priority=100"
+
+        # Router for www subdomain (www.bhavya.org.in)
+        - "traefik.http.routers.bhavya-frontend-www.rule=Host(`www.bhavya.org.in`)"
+        - "traefik.http.routers.bhavya-frontend-www.entrypoints=websecure"
+        - "traefik.http.routers.bhavya-frontend-www.tls=true"
+        - "traefik.http.routers.bhavya-frontend-www.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.bhavya-frontend-www.service=bhavya-app-service"
+        - "traefik.http.routers.bhavya-frontend-www.priority=100"
+
+        # ===== API ROUTING (Express API) =====
+        # Router for API subdomain (api.bhavya.org.in)
+        - "traefik.http.routers.bhavya-api.rule=Host(`api.bhavya.org.in`)"
+        - "traefik.http.routers.bhavya-api.entrypoints=websecure"
+        - "traefik.http.routers.bhavya-api.tls=true"
+        - "traefik.http.routers.bhavya-api.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.bhavya-api.service=bhavya-app-service"
+        - "traefik.http.routers.bhavya-api.priority=200"
+
+        # ===== SERVICE DEFINITION =====
+        # Single service pointing to the container port 5002
+        - "traefik.http.services.bhavya-app-service.loadbalancer.server.port=5002"
+        - "traefik.http.services.bhavya-app-service.loadbalancer.server.scheme=http"
+
+        # ===== MIDDLEWARE CONFIGURATION =====
+        # Security headers middleware
+        - "traefik.http.middlewares.bhavya-headers.headers.forceSTSHeader=true"
+        - "traefik.http.middlewares.bhavya-headers.headers.stsSeconds=31536000"
+        - "traefik.http.middlewares.bhavya-headers.headers.stsIncludeSubdomains=true"
+        - "traefik.http.middlewares.bhavya-headers.headers.stsPreload=true"
+        - "traefik.http.middlewares.bhavya-headers.headers.customRequestHeaders.X-Forwarded-Proto=https"
+
+        # Apply security headers to all routers
+        - "traefik.http.routers.bhavya-frontend.middlewares=bhavya-headers"
+        - "traefik.http.routers.bhavya-frontend-www.middlewares=bhavya-headers"
+        - "traefik.http.routers.bhavya-api.middlewares=bhavya-headers"
+
+        # ===== HTTP TO HTTPS REDIRECT =====
+        # Redirect HTTP to HTTPS for main domain
+        - "traefik.http.routers.bhavya-frontend-http.rule=Host(`bhavya.org.in`)"
+        - "traefik.http.routers.bhavya-frontend-http.entrypoints=web"
+        - "traefik.http.routers.bhavya-frontend-http.middlewares=redirect-to-https"
+
+        # Redirect HTTP to HTTPS for www domain
+        - "traefik.http.routers.bhavya-frontend-www-http.rule=Host(`www.bhavya.org.in`)"
+        - "traefik.http.routers.bhavya-frontend-www-http.entrypoints=web"
+        - "traefik.http.routers.bhavya-frontend-www-http.middlewares=redirect-to-https"
+
+        # Redirect HTTP to HTTPS for API domain
+        - "traefik.http.routers.bhavya-api-http.rule=Host(`api.bhavya.org.in`)"
+        - "traefik.http.routers.bhavya-api-http.entrypoints=web"
+        - "traefik.http.routers.bhavya-api-http.middlewares=redirect-to-https"
+
+        # Redirect middleware definition
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:5002/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  uploads_data:
+    driver: local
+  logs_data:
+    driver: local
+
+networks:
+  dokploy-network:
+    external: true
+    name: dokploy-network
