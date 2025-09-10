@@ -1,10 +1,5 @@
 # ===============================================
-# Multi-stage# Expose the application port
-EXPOSE 5002
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:5002/health', (res) => { \rfile for Dokploy Deployment
+# Multi-stage Dockerfile for Dokploy Deployment
 # ===============================================
 
 # Build stage for frontend
@@ -53,7 +48,7 @@ ENV PORT=5002
 ENV FRONTEND_BUILD_PATH=/frontend/build
 
 # Default MongoDB connection (can be overridden via environment variables)
-ENV DB_URI=mongodb://admin:StrongPassword123@mongo-db-mongodb-avaxdz:27017/bhavya_Events?authSource=admin
+ENV DB_URI=mongodb://admin:StrongPassword123@mongo-db-mongodb-avaxdz:27017/Bhavya_Events?authSource=admin
 
 # Security and optimization settings
 ENV NPM_CONFIG_LOGLEVEL=warn
@@ -68,11 +63,11 @@ RUN mkdir -p /app/uploads/admin /app/uploads/events /app/uploads/profiles && \
 USER nodejs
 
 # Expose the application port
-EXPOSE 5001
+EXPOSE 5002
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:5001/health', (res) => { \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:5002/health', (res) => { \
     res.statusCode === 200 ? process.exit(0) : process.exit(1) \
     }).on('error', () => process.exit(1))"
 
