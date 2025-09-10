@@ -3,7 +3,6 @@ version: "3.9"
 services:
   bhavya-events:
     build: .
-    container_name: bhavya-events
     restart: always
     environment:
       - NODE_ENV=production
@@ -25,7 +24,7 @@ services:
       - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
       - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
     expose:
-      - "5002" # internal only, no direct host mapping
+      - "5002"
     volumes:
       - uploads_data:/app/uploads
       - logs_data:/app/logs
@@ -34,30 +33,26 @@ services:
       - "traefik.enable=true"
 
       # ===== SINGLE SERVICE DEFINITION =====
-      # Define one service that all routers will use
-      - "traefik.http.services.bhavya-app.loadbalancer.server.port=5002"
-      - "traefik.http.services.bhavya-app.loadbalancer.server.scheme=http"
+      # Remove explicit service definition - let Traefik auto-discover from Docker Swarm
+      # Traefik will automatically create a service from the container
 
       # ===== FRONTEND ROUTERS (React App) =====
-      # Combined router for both main and www domains
       - "traefik.http.routers.bhavya-frontend.rule=Host(`bhavya.org.in`) || Host(`www.bhavya.org.in`)"
       - "traefik.http.routers.bhavya-frontend.entrypoints=websecure"
       - "traefik.http.routers.bhavya-frontend.tls=true"
       - "traefik.http.routers.bhavya-frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.bhavya-frontend.service=bhavya-app"
       - "traefik.http.routers.bhavya-frontend.priority=100"
+      - "traefik.http.routers.bhavya-frontend.loadbalancer.server.port=5002"
 
       # ===== API ROUTER (Express API) =====
-      # Dedicated router for API subdomain
       - "traefik.http.routers.bhavya-api.rule=Host(`api.bhavya.org.in`)"
       - "traefik.http.routers.bhavya-api.entrypoints=websecure"
       - "traefik.http.routers.bhavya-api.tls=true"
       - "traefik.http.routers.bhavya-api.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.bhavya-api.service=bhavya-app"
       - "traefik.http.routers.bhavya-api.priority=200"
+      - "traefik.http.routers.bhavya-api.loadbalancer.server.port=5002"
 
       # ===== SECURITY MIDDLEWARE =====
-      # Security headers
       - "traefik.http.middlewares.bhavya-security.headers.forceSTSHeader=true"
       - "traefik.http.middlewares.bhavya-security.headers.stsSeconds=31536000"
       - "traefik.http.middlewares.bhavya-security.headers.stsIncludeSubdomains=true"
@@ -69,7 +64,6 @@ services:
       - "traefik.http.routers.bhavya-api.middlewares=bhavya-security"
 
       # ===== HTTP TO HTTPS REDIRECTS =====
-      # Redirect middleware
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
 
@@ -86,11 +80,9 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:5002/health",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:5002/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))",
         ]
       interval: 30s
       timeout: 10s
