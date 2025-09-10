@@ -52,7 +52,7 @@ app.use(
   })
 );
 
-// Enhanced CORS configuration with detailed logging
+// Enhanced CORS configuration with strict origin checking
 const corsOptions = {
   origin: function (origin, callback) {
     console.log(
@@ -61,29 +61,34 @@ const corsOptions = {
       }`
     );
 
-    // Get allowed origins from env, with fallback defaults
-    const allowedOrigins = process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
-      : ["https://bhavya.org.in", "https://www.bhavya.org.in"];
+    // Explicitly defined allowed origins - only these two domains
+    const allowedOrigins = [
+      "https://bhavya.org.in",
+      "https://www.bhavya.org.in",
+    ];
 
-    console.log("🔒 Configured allowed origins:", allowedOrigins);
+    console.log("🔒 Allowed origins:", allowedOrigins);
 
-    // Allow requests with no Origin (same-origin, server-to-server, mobile apps)
-    // Also allow if origin is in our allowed list
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests with no Origin (same-origin, server-to-server, curl, health checks)
+    if (!origin) {
       console.log(
-        `✅ CORS: Access granted for ${origin || "no-origin request"}`
+        "✅ CORS: Access granted for no-origin request (curl/same-origin/health-check)"
       );
+      callback(null, true);
+      return;
+    }
+
+    // Check if origin is in our allowed list
+    if (allowedOrigins.includes(origin)) {
+      console.log(`✅ CORS: Access granted for allowed origin: ${origin}`);
       callback(null, true);
     } else {
-      console.log(`❌ CORS: Origin ${origin} not in allowed list`);
-      // For production debugging - allow all for now, comment out for strict CORS
-      console.log(
-        `⚠️  CORS: Allowing anyway for debugging (remove in production)`
+      console.log(`❌ CORS: Origin ${origin} not allowed - rejecting request`);
+      const error = new Error(
+        `CORS policy violation: Origin ${origin} is not allowed`
       );
-      callback(null, true);
-      // Uncomment for strict CORS enforcement:
-      // callback(new Error(`Origin ${origin} not allowed by CORS`));
+      error.status = 403;
+      callback(error, false);
     }
   },
   credentials: true, // Enable credentials support for authentication
