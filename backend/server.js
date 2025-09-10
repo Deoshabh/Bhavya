@@ -29,16 +29,6 @@ const fs = require("fs");
 // Trust proxy - this is critical for rate limiting behind a proxy
 app.set("trust proxy", "loopback, linklocal, uniquelocal"); // More comprehensive setting
 
-// Add these lines right after the app initialization for debugging CORS issues
-app.use((req, res, next) => {
-  console.log("Request Origin:", req.headers.origin);
-  console.log(
-    "Allowed Origins:",
-    process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : "none"
-  );
-  next();
-});
-
 // Security middleware
 app.use(
   helmet({
@@ -62,31 +52,41 @@ app.use(
   })
 );
 
-// Update CORS configuration
+// Enhanced CORS configuration with detailed logging
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log(`CORS request from origin: ${origin}`);
+    console.log(
+      `🌐 CORS Request - Origin: ${
+        origin || "No Origin (same-origin/server-to-server)"
+      }`
+    );
 
     // Get allowed origins from env, with fallback defaults
     const allowedOrigins = process.env.CORS_ORIGIN
       ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
       : ["https://bhavya.org.in", "https://www.bhavya.org.in"];
 
-    console.log("Configured allowed origins:", allowedOrigins);
+    console.log("🔒 Configured allowed origins:", allowedOrigins);
 
     // Allow requests with no Origin (same-origin, server-to-server, mobile apps)
     // Also allow if origin is in our allowed list
     if (!origin || allowedOrigins.includes(origin)) {
+      console.log(
+        `✅ CORS: Access granted for ${origin || "no-origin request"}`
+      );
       callback(null, true);
     } else {
-      console.log(`Origin ${origin} not allowed by CORS`);
-      // For debugging in production - you can remove this line later
+      console.log(`❌ CORS: Origin ${origin} not in allowed list`);
+      // For production debugging - allow all for now, comment out for strict CORS
+      console.log(
+        `⚠️  CORS: Allowing anyway for debugging (remove in production)`
+      );
       callback(null, true);
-      // Uncomment for strict CORS:
+      // Uncomment for strict CORS enforcement:
       // callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },
-  credentials: true, // Enable credentials support
+  credentials: true, // Enable credentials support for authentication
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   exposedHeaders: ["Content-Range", "X-Content-Range"],
@@ -167,12 +167,20 @@ if (process.env.NODE_ENV === "production") {
   app.use(morgan("dev"));
 }
 
-// Health check endpoint
+// Enhanced Health check endpoint
 app.get("/health", (req, res) => {
+  console.log("🏥 Health check requested");
   res.status(200).json({
-    status: "UP",
-    timestamp: new Date(),
-    uptime: process.uptime(),
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    environment: process.env.NODE_ENV || "development",
+    version: "1.0.0",
+    services: {
+      database:
+        mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+      server: "running",
+    },
   });
 });
 
@@ -382,110 +390,150 @@ app.use("/auth", authRoutes);
 // Also mount profile routes without /api prefix for compatibility
 app.use("/profile", profileRoutes);
 
-// Serve static files in production
-if (process.env.NODE_ENV === "production") {
-  console.log("Running in production mode, attempting to serve static files");
+// Enhanced React Frontend Serving Configuration
+// Serve frontend in production and when build exists
+console.log("🎯 Configuring React frontend serving...");
 
-  // Use absolute path resolution with proper fallbacks
-  const frontendPath = process.env.FRONTEND_BUILD_PATH
-    ? path.resolve(process.env.FRONTEND_BUILD_PATH)
-    : path.resolve(__dirname, "..", "frontend", "build");
+// Use absolute path resolution with proper fallbacks
+const frontendPath = process.env.FRONTEND_BUILD_PATH
+  ? path.resolve(process.env.FRONTEND_BUILD_PATH)
+  : path.resolve(__dirname, "..", "frontend", "build");
 
-  console.log(`Looking for frontend files at: ${frontendPath}`);
+console.log(`📁 Looking for React build at: ${frontendPath}`);
+console.log(`🔧 Environment mode: ${process.env.NODE_ENV || "development"}`);
 
-  try {
-    // Check if directory exists
-    if (fs.existsSync(frontendPath)) {
-      console.log(`Frontend directory found at ${frontendPath}`);
+try {
+  // Check if directory exists
+  if (fs.existsSync(frontendPath)) {
+    console.log(`✅ React build found at: ${frontendPath}`);
 
-      // Serve static files with explicit options
-      app.use(
-        express.static(frontendPath, {
-          index: "index.html",
-          setHeaders: (res, filePath) => {
-            // Set proper caching headers for static assets
-            if (filePath.endsWith(".html")) {
-              // Don't cache HTML files
-              res.setHeader("Cache-Control", "no-cache");
-            } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg)$/)) {
-              // Cache assets for 1 day
-              res.setHeader("Cache-Control", "public, max-age=86400");
-            }
-          },
-        })
-      );
+    // List contents for debugging
+    const buildContents = fs.readdirSync(frontendPath);
+    console.log(
+      `📂 Build directory contents: ${buildContents.slice(0, 5).join(", ")}${
+        buildContents.length > 5 ? "..." : ""
+      }`
+    );
 
-      // Handle client-side routing by serving index.html for non-API routes
-      app.get("*", (req, res, next) => {
-        // Skip API routes and upload routes
-        if (
-          req.path.startsWith("/api") ||
-          req.path === "/health" ||
-          req.path.startsWith("/uploads") ||
-          req.path.startsWith("/check-image")
-        ) {
-          return next();
-        }
+    // Serve static files with explicit options and enhanced caching
+    app.use(
+      express.static(frontendPath, {
+        index: false, // Don't auto-serve index.html for directories
+        setHeaders: (res, filePath) => {
+          const fileName = path.basename(filePath);
+          console.log(`📤 Serving static file: ${fileName}`);
 
-        const indexPath = path.join(frontendPath, "index.html");
-        console.log(`Attempting to serve: ${indexPath}`);
+          // Set proper caching headers for static assets
+          if (filePath.endsWith(".html")) {
+            // Don't cache HTML files for fresh updates
+            res.setHeader(
+              "Cache-Control",
+              "no-cache, no-store, must-revalidate"
+            );
+            res.setHeader("Pragma", "no-cache");
+            res.setHeader("Expires", "0");
+          } else if (filePath.match(/\.(js|css)$/)) {
+            // Cache JS/CSS for 1 year (they have hashes)
+            res.setHeader(
+              "Cache-Control",
+              "public, max-age=31536000, immutable"
+            );
+          } else if (filePath.match(/\.(png|jpg|jpeg|gif|ico|svg|webp)$/)) {
+            // Cache images for 1 week
+            res.setHeader("Cache-Control", "public, max-age=604800");
+          } else {
+            // Default cache for other files
+            res.setHeader("Cache-Control", "public, max-age=86400");
+          }
+        },
+      })
+    );
 
-        if (fs.existsSync(indexPath)) {
-          console.log(`Serving index.html from ${indexPath}`);
-          res.sendFile(indexPath);
-        } else {
-          console.error(`Index file not found at ${indexPath}`);
-          res.status(404).send(`
-                        <h1>Error: Frontend Index File Not Found</h1>
-                        <p>The frontend build exists but index.html was not found.</p>
-                        <p>Expected location: ${indexPath}</p>
-                        <p>API routes are still available.</p>
-                    `);
-        }
-      });
-    } else {
-      console.error(`Frontend directory not found at ${frontendPath}`);
-
-      // Create the directory structure in case it doesn't exist
-      try {
-        fs.mkdirSync(frontendPath, { recursive: true });
-        console.log(`Created frontend directory structure at ${frontendPath}`);
-        console.log("Please build and deploy your frontend to this location");
-      } catch (mkdirErr) {
-        console.error(
-          `Failed to create frontend directory: ${mkdirErr.message}`
-        );
+    // Enhanced client-side routing handler with better logging
+    app.get("*", (req, res, next) => {
+      // Skip API routes, health checks, uploads, and other server routes
+      if (
+        req.path.startsWith("/api") ||
+        req.path === "/health" ||
+        req.path.startsWith("/uploads") ||
+        req.path.startsWith("/check-image") ||
+        req.path.startsWith("/auth") ||
+        req.path.startsWith("/profile") ||
+        req.path === "/favicon.ico" ||
+        req.path === "/favicon.webp" ||
+        req.path === "/robots.txt"
+      ) {
+        return next();
       }
 
-      // Add a fallback handler for non-API routes to show a helpful message
-      app.get("*", (req, res, next) => {
-        if (
-          req.path.startsWith("/api") ||
-          req.path === "/health" ||
-          req.path.startsWith("/uploads") ||
-          req.path.startsWith("/check-image")
-        ) {
-          return next();
-        }
+      const indexPath = path.join(frontendPath, "index.html");
+      console.log(
+        `🔄 Client-side route detected: ${req.path} → serving React app`
+      );
 
+      if (fs.existsSync(indexPath)) {
+        console.log(`✅ Serving React app from: ${path.basename(indexPath)}`);
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.sendFile(indexPath);
+      } else {
+        console.error(`❌ Index file not found at: ${indexPath}`);
         res.status(404).send(`
-                    <h1>Frontend Build Not Found</h1>
-                    <p>Frontend build directory not found at: ${frontendPath}</p>
-                    <p>API routes are still available.</p>
-                    <p>To fix this:</p>
-                    <ol>
-                        <li>Make sure you've built your React frontend with 'npm run build'</li>
-                        <li>Copy the build folder to: ${frontendPath}</li>
-                        <li>Or set FRONTEND_BUILD_PATH environment variable to your build location</li>
-                        <li>Restart the server</li>
-                    </ol>
-                    <p>Server running in: ${process.env.NODE_ENV} mode</p>
-                `);
-      });
-    }
-  } catch (err) {
-    console.error(`Error setting up static files: ${err.message}`);
+          <h1>🚫 Frontend Not Available</h1>
+          <p><strong>Error:</strong> React build not found</p>
+          <p><strong>Expected location:</strong> ${indexPath}</p>
+          <p><strong>Solution:</strong> Run <code>npm run build</code> in the frontend directory</p>
+          <hr>
+          <p>✅ API endpoints are still available at <a href="/api">/api</a></p>
+          <p>✅ Health check: <a href="/health">/health</a></p>
+        `);
+      }
+    });
+  } else {
+    console.log(`ℹ️  React build directory not found at: ${frontendPath}`);
+    console.log(`� Frontend will not be served. API-only mode active.`);
+
+    // Fallback handler for missing frontend
+    app.get("*", (req, res, next) => {
+      // Skip API and server routes
+      if (
+        req.path.startsWith("/api") ||
+        req.path === "/health" ||
+        req.path.startsWith("/uploads") ||
+        req.path.startsWith("/check-image") ||
+        req.path.startsWith("/auth") ||
+        req.path.startsWith("/profile") ||
+        req.path === "/favicon.ico" ||
+        req.path === "/favicon.webp" ||
+        req.path === "/robots.txt"
+      ) {
+        return next();
+      }
+
+      console.log(
+        `ℹ️  Frontend request for: ${req.path} (build not available)`
+      );
+      res.status(503).send(`
+        <h1>🚧 Frontend Build Required</h1>
+        <p><strong>Status:</strong> React frontend not built yet</p>
+        <p><strong>Missing:</strong> ${frontendPath}</p>
+        <h3>🛠️ Setup Instructions:</h3>
+        <ol>
+          <li>Navigate to the frontend directory</li>
+          <li>Run <code>npm install</code></li>
+          <li>Run <code>npm run build</code></li>
+          <li>Restart this server</li>
+        </ol>
+        <hr>
+        <p>✅ <strong>API Status:</strong> Available at <a href="/api">/api</a></p>
+        <p>✅ <strong>Health Check:</strong> <a href="/health">/health</a></p>
+        <p>🔧 <strong>Environment:</strong> ${
+          process.env.NODE_ENV || "development"
+        }</p>
+      `);
+    });
   }
+} catch (err) {
+  console.error(`❌ Error setting up React frontend serving: ${err.message}`);
 }
 
 // Error handling middleware
@@ -517,68 +565,108 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server with graceful shutdown
+// Enhanced server startup with comprehensive logging
 const startServer = async () => {
   try {
-    // Debug environment variables
-    console.log("🔧 Environment Debug Info:");
-    console.log("- NODE_ENV:", process.env.NODE_ENV);
-    console.log("- PORT:", process.env.PORT);
-    console.log("- APP_PORT:", process.env.APP_PORT);
+    console.log("🚀 Starting Bhavya Events Server...");
+    console.log("" + "=".repeat(50));
+
+    // Enhanced environment debug info
+    console.log("🔧 Environment Configuration:");
+    console.log("- NODE_ENV:", process.env.NODE_ENV || "development");
+    console.log("- APP_PORT:", process.env.APP_PORT || "not set");
+    console.log("- PORT:", process.env.PORT || "not set");
+    console.log(
+      "- FRONTEND_BUILD_PATH:",
+      process.env.FRONTEND_BUILD_PATH || "default"
+    );
     console.log("- MONGODB_URI exists:", !!process.env.MONGODB_URI);
     console.log("- DB_URI exists:", !!process.env.DB_URI);
     console.log("- DATABASE_URL exists:", !!process.env.DATABASE_URL);
-    console.log("- CORS_ORIGIN:", process.env.CORS_ORIGIN);
+    console.log("- CORS_ORIGIN:", process.env.CORS_ORIGIN || "default");
+    console.log("" + "=".repeat(50));
 
-    // Connect to MongoDB
+    // Connect to MongoDB with enhanced logging
+    console.log("📊 Connecting to MongoDB...");
     await connectDB();
-    console.log("MongoDB Connected Successfully");
+    console.log("✅ MongoDB Connected Successfully");
 
-    // Use APP_PORT from environment with fallback to PORT, then default to 5002
+    // Use APP_PORT from environment with proper fallback chain
     const port = process.env.APP_PORT || process.env.PORT || 5002;
+    console.log(
+      `🌐 Using port: ${port} (source: ${
+        process.env.APP_PORT
+          ? "APP_PORT"
+          : process.env.PORT
+          ? "PORT"
+          : "default"
+      })`
+    );
 
-    const server = app.listen(port, () => {
-      console.log(
-        `🚀 Server running in ${
-          process.env.NODE_ENV || "development"
-        } mode on port ${port}`
-      );
-      console.log(`📡 API available at: http://localhost:${port}/api`);
+    const server = app.listen(port, "0.0.0.0", () => {
+      console.log("" + "=".repeat(50));
+      console.log("🎉 SERVER SUCCESSFULLY STARTED");
+      console.log("" + "=".repeat(50));
+      console.log(`🚀 Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`🌐 Server running on: http://0.0.0.0:${port}`);
+      console.log(`📡 API endpoints: http://localhost:${port}/api`);
       console.log(`❤️  Health check: http://localhost:${port}/health`);
+      console.log(
+        `📱 Frontend: ${
+          process.env.NODE_ENV === "production"
+            ? "Serving React build"
+            : "API only mode"
+        }`
+      );
+      console.log("" + "=".repeat(50));
+      console.log("🔗 Available endpoints:");
+      console.log("   GET  /health          - Health check");
+      console.log("   GET  /api/*           - API routes");
+      console.log("   GET  /*               - React frontend (production)");
+      console.log("" + "=".repeat(50));
+      console.log("🎯 Server ready to accept connections!");
     });
 
-    // Graceful shutdown
-    process.on("SIGTERM", () => gracefulShutdown(server));
-    process.on("SIGINT", () => gracefulShutdown(server));
+    // Enhanced graceful shutdown handlers
+    const gracefulShutdown = (signal) => {
+      console.log(`\n⚠️  Received ${signal}. Starting graceful shutdown...`);
+      gracefulShutdownHandler(server);
+    };
+
+    process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+    process.on("SIGINT", () => gracefulShutdown("SIGINT"));
   } catch (error) {
-    console.error("Failed to connect to MongoDB:", error);
+    console.error("❌ Failed to start server:");
+    console.error("💥 Error:", error.message);
+    console.error("📍 Stack:", error.stack);
     process.exit(1);
   }
 };
 
-async function gracefulShutdown(server) {
-  console.log("Received kill signal, shutting down gracefully");
+async function gracefulShutdownHandler(server) {
+  console.log("🛑 Starting graceful shutdown process...");
 
   try {
     // Close MongoDB connection
+    console.log("📊 Closing MongoDB connection...");
     await mongoose.connection.close();
-    console.log("MongoDB connection closed");
+    console.log("✅ MongoDB connection closed successfully");
 
     // Close Express server
+    console.log("🌐 Closing HTTP server...");
     server.close(() => {
-      console.log("Closed out remaining connections");
+      console.log("✅ HTTP server closed successfully");
+      console.log("👋 Graceful shutdown completed");
       process.exit(0);
     });
 
-    // Force close after 10 secs
+    // Force close after 10 seconds if graceful shutdown fails
     setTimeout(() => {
-      console.error(
-        "Could not close connections in time, forcefully shutting down"
-      );
+      console.error("⚠️  Graceful shutdown timeout - forcing exit");
       process.exit(1);
     }, 10000);
   } catch (error) {
-    console.error("Error during shutdown:", error);
+    console.error("❌ Error during graceful shutdown:", error.message);
     process.exit(1);
   }
 }
