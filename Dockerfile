@@ -49,6 +49,7 @@ ENV FRONTEND_BUILD_PATH=/frontend/build
 
 # Default MongoDB connection (can be overridden via environment variables)
 ENV DB_URI=mongodb://admin:StrongPassword123@mongo-db-mongodb-avaxdz:27017/Bhavya_Events?authSource=admin
+ENV MONGODB_URI=mongodb://admin:StrongPassword123@mongo-db-mongodb-avaxdz:27017/Bhavya_Events?authSource=admin
 
 # Security and optimization settings
 ENV NPM_CONFIG_LOGLEVEL=warn

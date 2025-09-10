@@ -520,6 +520,16 @@ app.use((err, req, res, next) => {
 // Start server with graceful shutdown
 const startServer = async () => {
   try {
+    // Debug environment variables
+    console.log("🔧 Environment Debug Info:");
+    console.log("- NODE_ENV:", process.env.NODE_ENV);
+    console.log("- PORT:", process.env.PORT);
+    console.log("- APP_PORT:", process.env.APP_PORT);
+    console.log("- MONGODB_URI exists:", !!process.env.MONGODB_URI);
+    console.log("- DB_URI exists:", !!process.env.DB_URI);
+    console.log("- DATABASE_URL exists:", !!process.env.DATABASE_URL);
+    console.log("- CORS_ORIGIN:", process.env.CORS_ORIGIN);
+
     // Connect to MongoDB
     await connectDB();
     console.log("MongoDB Connected Successfully");
