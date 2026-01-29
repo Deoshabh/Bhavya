@@ -230,19 +230,7 @@ app.get("/robots.txt", (req, res) => {
   }
 });
 
-// Add this before the API routes
-app.get("/", (req, res) => {
-  res.json({
-    status: "success",
-    message: "Welcome to the API",
-    version: "1.0.0",
-    endpoints: {
-      health: "/health",
-      api: "/api",
-      docs: "/api-docs",
-    },
-  });
-});
+// Removed hardcoded root route - React frontend will serve / via static files
 
 // Fix for static files - ensure these lines are BEFORE the API routes
 // Create absolute paths to uploads directories

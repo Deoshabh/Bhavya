@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  bhavya-events:
+    build: .
+    container_name: bhavya-events
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - APP_PORT=5002
+      - PORT=5002
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_URI=${DB_URI}
+      - DATABASE_URL=${DATABASE_URL}
+      - CORS_ORIGIN=https://bhavya.org.in,https://www.bhavya.org.in
+    expose:
+      - "5002"
+    labels:
+      # ===== MINIMAL TRAEFIK CONFIG FOR TESTING =====
+      - "traefik.enable=true"
+
+      # Single service definition
+      - "traefik.http.services.bhavya.loadbalancer.server.port=5002"
+
+      # Simple frontend router (no TLS for testing)
+      - "traefik.http.routers.bhavya-test.rule=Host(`bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-test.entrypoints=web"
+      - "traefik.http.routers.bhavya-test.service=bhavya"
+
+      # API router (no TLS for testing)
+      - "traefik.http.routers.bhavya-api-test.rule=Host(`api.bhavya.org.in`)"
+      - "traefik.http.routers.bhavya-api-test.entrypoints=web"
+      - "traefik.http.routers.bhavya-api-test.service=bhavya"
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:5002/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  default:
+    external: true
+    name: dokploy-network

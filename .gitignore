@@ -77,3 +77,6 @@ Thumbs.db
 *.out
 *.gz
 *.swp 
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md
