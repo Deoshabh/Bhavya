@@ -9,7 +9,7 @@ import { useNotification } from "../context/NotificationContext";
 import api from "../services/api";
 
 const Home = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { showNotification } = useNotification();
   const [featuredEvents, setFeaturedEvents] = useState({

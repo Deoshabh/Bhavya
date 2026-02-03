@@ -21,7 +21,6 @@ import api from "../services/api";
 
 const EventDetails = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
