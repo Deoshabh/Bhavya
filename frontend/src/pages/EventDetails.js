@@ -57,38 +57,6 @@ const EventDetails = () => {
     fetchEventDetails();
   }, [id]);
 
-  const fetchEventDetails = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await api.get(`/events/${id}`);
-
-      if (response.data && response.data.success) {
-        setEvent(response.data.event);
-      } else {
-        throw new Error(
-          response.data?.message || "Failed to fetch event details",
-        );
-      }
-    } catch (error) {
-      console.error("Error fetching event details:", error);
-      if (error.response?.status === 400) {
-        navigate("/events");
-      } else if (error.response?.status === 404) {
-        setError("Event not found");
-      } else {
-        setError(
-          error.response?.data?.message ||
-            error.message ||
-            "Failed to load event details",
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (loading) {
     return (
       <Container sx={{ display: "flex", justifyContent: "center", py: 4 }}>

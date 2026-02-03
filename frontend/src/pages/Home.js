@@ -21,11 +21,6 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   const handleBooking = (eventId) => {
     if (!user) {
       showNotification("Please login to book tickets", "info");
