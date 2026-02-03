@@ -28,12 +28,40 @@ const xss = require("xss-clean");
 const hpp = require("hpp");
 
 app.use(helmet({ crossOriginResourcePolicy: false }));
+
+// CORS configuration
+const allowedOrigins = [
+  "https://bhavya.org.in",
+  "https://www.bhavya.org.in",
+  "https://api.bhavya.org.in",
+  "http://localhost:3000",
+  "http://localhost:3001"
+];
+
+// Add environment variable origins if specified
+if (process.env.CORS_ORIGIN) {
+  const envOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
+  allowedOrigins.push(...envOrigins);
+}
+
 app.use(cors({
-  origin: [
-    "https://bhavya.org.in",
-    "https://www.bhavya.org.in"
-  ],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log(`CORS: Blocked request from origin: ${origin}`);
+      console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400 // 24 hours
 }));
 app.use(mongoSanitize());
 app.use(xss());
